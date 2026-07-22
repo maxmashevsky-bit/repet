@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 import { formatTime, todayISO } from "../../shared/lib/date";
 import { useWorkspace } from "../app-shell/AppShell";
+import { Icon } from "../ui/Icon";
 
 type ViewMode = "day" | "week" | "month";
 
@@ -28,9 +29,9 @@ export function CalendarPage() {
     <section className="calendar-layout">
       <div className="page-title full"><h1>Календарь</h1><p>Занятия, задания и важные даты в одном месте.</p></div>
       <aside className="panel calendar-side">
-        <button className="terracotta" type="button">Добавить занятие</button>
+        <button className="terracotta add-event" type="button"><Icon name="plus" />Добавить</button>
         <h2>{title}</h2>
-        <div className="mini-calendar">{monthDays.slice(0, 31).map((day) => <span key={day} className={day === Number(date.slice(8, 10)) ? "active" : ""}>{day}</span>)}</div>
+        <div className="mini-calendar"><div className="mini-weekdays">{["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((day) => <b key={day}>{day}</b>)}</div>{monthDays.slice(0, 31).map((day) => <span key={day} className={day === Number(date.slice(8, 10)) ? "active" : ""}>{day}</span>)}</div>
         {dashboard.user.role === "tutor" ? (
           <div className="filters"><h2>Ученики</h2>{dashboard.relations.map((relation, index) => <label key={relation.id}><input type="checkbox" defaultChecked /> Ученик {index + 1}</label>)}</div>
         ) : (
@@ -39,8 +40,8 @@ export function CalendarPage() {
       </aside>
       <section className="panel calendar-main">
         <div className="calendar-toolbar">
-          <button type="button" className="secondary">Сегодня</button>
-          <h2>{view === "day" ? "Среда, 22 июля 2026" : view === "week" ? "20-26 июля 2026" : title}</h2>
+          <div className="date-navigation"><button type="button" className="secondary">Сегодня</button><button type="button" className="icon-button" aria-label="Предыдущий период"><Icon name="chevron" className="back" /></button><button type="button" className="icon-button" aria-label="Следующий период"><Icon name="chevron" /></button></div>
+          <h2>{view === "day" ? "Среда, 22 июля 2026" : view === "week" ? "20–26 июля 2026" : title}</h2>
           <div className="segmented">
             {modes.map((mode) => <button key={mode} type="button" className={view === mode ? "active" : ""} onClick={() => setView(mode)}>{modeLabel(mode)}</button>)}
           </div>
@@ -58,9 +59,10 @@ export function CalendarPage() {
           </div>
         ) : (
           <div className={view === "week" ? "time-grid week" : "time-grid"}>
+            {view === "week" ? <div className="week-header">{["Пн 20", "Вт 21", "Ср 22", "Чт 23", "Пт 24", "Сб 25", "Вс 26"].map((day) => <strong key={day}>{day}</strong>)}</div> : null}
             {hours.map((hour) => <span key={hour} className="hour">{hour}:00</span>)}
             {dashboard.lessons.map((lesson, index) => (
-              <button key={lesson.id} className={`calendar-event tone-${index % 4}`} style={{ top: `${72 + index * 72}px` }} type="button">
+              <button key={lesson.id} className={`calendar-event tone-${index % 4}`} style={view === "week" ? { top: `${142 + index * 72}px`, left: `${12 + (index % 7) * 12.45}%`, width: "11.3%" } : { top: `${72 + index * 72}px` }} type="button">
                 <strong>{formatTime(lesson.starts_at)} - {formatTime(lesson.ends_at)}</strong>
                 <span>{lesson.title}{dashboard.user.role === "tutor" ? " · ученик" : ""}</span>
               </button>
@@ -80,4 +82,3 @@ function normalizeView(value: string | null): ViewMode {
 function modeLabel(mode: ViewMode): string {
   return mode === "day" ? "День" : mode === "week" ? "Неделя" : "Месяц";
 }
-

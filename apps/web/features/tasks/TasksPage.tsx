@@ -5,6 +5,8 @@ import { productApi } from "../../shared/api/client";
 import type { Assignment } from "../../shared/api/types";
 import { formatDateTime } from "../../shared/lib/date";
 import { useWorkspace } from "../app-shell/AppShell";
+import { BrandMark } from "../ui/Brand";
+import { Icon } from "../ui/Icon";
 
 export function TasksPage() {
   const { dashboard } = useWorkspace();
@@ -31,22 +33,30 @@ function StudentTasks() {
   return (
     <section className="tasks-layout">
       <div className="page-title full"><h1>Задания</h1><p>Домашние работы, тесты и задания с занятий.</p></div>
-      <article className="hero-card full">
-        <p className="eyebrow">Продолжить задание</p>
-        <h2>{selected?.title ?? "Заданий пока нет"}</h2>
-        <p>{selected ? `${selected.topic} · до ${formatDateTime(selected.due_at)}` : "Когда преподаватель назначит работу, она появится здесь."}</p>
+      <div className="tasks-toolbar full">
+        <div className="tabs"><button className="active">Нужно сделать <span>{dashboard.assignments.filter((item) => item.status !== "done").length}</span></button><button>В процессе</button><button>На проверке</button><button>Проверено</button><button>Все</button></div>
+        <label className="search-field"><Icon name="search" size={19} /><input aria-label="Найти задание" placeholder="Найти задание" /></label>
+      </div>
+      <article className="hero-card task-hero full">
+        <BrandMark decorative />
+        <div className="hero-content">
+          <p className="eyebrow">Продолжить задание</p>
+          <h2>{selected?.title ?? "Заданий пока нет"}</h2>
+          <p className="hero-meta">{selected ? <><Icon name="user" size={18} />{selected.topic}<span>·</span><Icon name="calendar" size={18} />Сдать до {formatDateTime(selected.due_at)}</> : "Когда преподаватель назначит работу, она появится здесь."}</p>
+          {selected ? <><p className="hero-topic">Выполнено 6 из 10 заданий</p><div className="hero-progress"><span style={{ width: "60%" }} /><b>60%</b></div><div className="actions hero-actions"><a className="button hero-primary" href="#task-work">Продолжить <Icon name="arrow" size={18} /></a><button className="hero-secondary" type="button">Открыть конспект <Icon name="task" size={18} /></button></div></> : null}
+        </div>
       </article>
       <section className="panel">
         <h2>Мои задания</h2>
-        <div className="tabs"><button className="active">Нужно сделать</button><button>На проверке</button><button>Проверено</button><button>Все</button></div>
         {dashboard.assignments.length === 0 ? <p className="empty">Нет назначенных заданий.</p> : dashboard.assignments.map((item) => (
           <button key={item.id} type="button" className={selected?.id === item.id ? "task-row active" : "task-row"} onClick={() => { setSelected(item); setAnswer(item.answer); }}>
-            <strong>{item.title}</strong>
-            <span>{item.status} · до {formatDateTime(item.due_at)}</span>
+            <span className={item.status === "overdue" ? "soft-icon terracotta-soft" : "soft-icon"}><Icon name="task" size={19} /></span>
+            <span className="task-copy"><strong>{item.title}</strong><small>{item.status} · до {formatDateTime(item.due_at)}</small></span>
+            <Icon name="chevron" size={18} />
           </button>
         ))}
       </section>
-      <section className="panel">
+      <section className="panel" id="task-work">
         <h2>Работа</h2>
         {selected ? (
           <>
@@ -96,14 +106,14 @@ function TeacherTasks() {
 
   return (
     <section className="tasks-layout teacher">
-      <div className="page-title full"><h1>Задания</h1><p>Создавайте задания, проверяйте работы и следите за результатами учеников.</p></div>
+      <div className="page-title full page-title-action"><div><h1>Задания</h1><p>Создавайте задания, проверяйте работы и следите за результатами учеников.</p></div><a className="button" href="#create-assignment"><Icon name="plus" />Создать задание</a></div>
       <div className="metric-row full">
-        <div className="metric"><strong>{review.length}</strong><span>На проверку</span></div>
-        <div className="metric"><strong>{dashboard.assignments.filter((item) => item.status === "revision").length}</strong><span>На исправлении</span></div>
-        <div className="metric"><strong>{dashboard.assignments.filter((item) => item.status === "overdue").length}</strong><span>Просрочено</span></div>
-        <div className="metric"><strong>{dashboard.assignments.filter((item) => item.status === "done").length}</strong><span>Проверено</span></div>
+        <div className="metric"><span className="soft-icon"><Icon name="task" /></span><span>На проверку<strong>{review.length}</strong></span></div>
+        <div className="metric"><span className="soft-icon terracotta-soft"><Icon name="task" /></span><span>На исправлении<strong>{dashboard.assignments.filter((item) => item.status === "revision").length}</strong></span></div>
+        <div className="metric"><span className="soft-icon danger-soft"><Icon name="clock" /></span><span>Просрочено<strong>{dashboard.assignments.filter((item) => item.status === "overdue").length}</strong></span></div>
+        <div className="metric"><span className="soft-icon"><Icon name="chart" /></span><span>Проверено<strong>{dashboard.assignments.filter((item) => item.status === "done").length}</strong></span></div>
       </div>
-      <section className="panel">
+      <section className="panel" id="create-assignment">
         <h2>Создать задание</h2>
         <form className="form-stack" onSubmit={create}>
           <label>Ученик<select value={studentID} onChange={(event) => setStudentID(event.target.value)} required>{dashboard.relations.map((relation, index) => <option key={relation.id} value={relation.student_id}>Ученик {index + 1}</option>)}</select></label>
@@ -135,4 +145,3 @@ function TeacherTasks() {
     </section>
   );
 }
-

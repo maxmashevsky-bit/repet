@@ -5,6 +5,7 @@ import { useState } from "react";
 import { productApi } from "../../shared/api/client";
 import { formatDateTime } from "../../shared/lib/date";
 import { useWorkspace } from "../app-shell/AppShell";
+import { Icon } from "../ui/Icon";
 
 export function NotificationsPopover({ unread }: { unread: number }) {
   const { dashboard, refresh } = useWorkspace();
@@ -21,7 +22,7 @@ export function NotificationsPopover({ unread }: { unread: number }) {
   return (
     <div className="notifications">
       <button className="bell-button" type="button" aria-label="Открыть уведомления" onClick={() => setOpen((value) => !value)}>
-        <span aria-hidden="true">!</span>
+        <Icon name="bell" size={25} />
         {unread > 0 ? <strong>{unread}</strong> : null}
       </button>
       {open ? (
@@ -52,4 +53,3 @@ export function NotificationsPopover({ unread }: { unread: number }) {
     </div>
   );
 }
-
