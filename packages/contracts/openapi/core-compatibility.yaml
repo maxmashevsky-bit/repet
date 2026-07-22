@@ -1,0 +1,35 @@
+openapi: 3.1.0
+info:
+  title: Repet Core Compatibility API
+  version: 0.2.0
+paths:
+  /api/v1/auth/register:
+    post:
+      summary: Register student or tutor and create session.
+      responses:
+        "201": { description: Created }
+  /api/v1/auth/login:
+    post:
+      summary: Login with email and password.
+      responses:
+        "200": { description: Logged in }
+  /api/v1/dashboard:
+    get:
+      summary: Compatibility dashboard view model.
+      responses:
+        "200": { description: Dashboard }
+  /api/v1/messages/conversations:
+    get:
+      summary: List visible conversations.
+      responses:
+        "200": { description: Conversations }
+  /api/v1/assignments:
+    get:
+      summary: List visible assignments.
+      responses:
+        "200": { description: Assignments }
+    post:
+      summary: Teacher publishes an assignment.
+      responses:
+        "201": { description: Created }
+

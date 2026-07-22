@@ -1,0 +1,138 @@
+"use client";
+
+import { FormEvent, useMemo, useState } from "react";
+import { productApi } from "../../shared/api/client";
+import type { Assignment } from "../../shared/api/types";
+import { formatDateTime } from "../../shared/lib/date";
+import { useWorkspace } from "../app-shell/AppShell";
+
+export function TasksPage() {
+  const { dashboard } = useWorkspace();
+  return dashboard.user.role === "tutor" ? <TeacherTasks /> : <StudentTasks />;
+}
+
+function StudentTasks() {
+  const { dashboard, refresh } = useWorkspace();
+  const [selected, setSelected] = useState<Assignment | null>(dashboard.assignments[0] ?? null);
+  const [answer, setAnswer] = useState(selected?.answer ?? "");
+  const [error, setError] = useState("");
+
+  async function submit() {
+    if (!selected) return;
+    setError("");
+    try {
+      await productApi.submitAssignment(selected.id, answer);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось отправить работу");
+    }
+  }
+
+  return (
+    <section className="tasks-layout">
+      <div className="page-title full"><h1>Задания</h1><p>Домашние работы, тесты и задания с занятий.</p></div>
+      <article className="hero-card full">
+        <p className="eyebrow">Продолжить задание</p>
+        <h2>{selected?.title ?? "Заданий пока нет"}</h2>
+        <p>{selected ? `${selected.topic} · до ${formatDateTime(selected.due_at)}` : "Когда преподаватель назначит работу, она появится здесь."}</p>
+      </article>
+      <section className="panel">
+        <h2>Мои задания</h2>
+        <div className="tabs"><button className="active">Нужно сделать</button><button>На проверке</button><button>Проверено</button><button>Все</button></div>
+        {dashboard.assignments.length === 0 ? <p className="empty">Нет назначенных заданий.</p> : dashboard.assignments.map((item) => (
+          <button key={item.id} type="button" className={selected?.id === item.id ? "task-row active" : "task-row"} onClick={() => { setSelected(item); setAnswer(item.answer); }}>
+            <strong>{item.title}</strong>
+            <span>{item.status} · до {formatDateTime(item.due_at)}</span>
+          </button>
+        ))}
+      </section>
+      <section className="panel">
+        <h2>Работа</h2>
+        {selected ? (
+          <>
+            <p>{selected.body}</p>
+            <label>Ответ<textarea value={answer} onChange={(event) => setAnswer(event.target.value)} rows={7} /></label>
+            {selected.feedback ? <p className="notice">Комментарий преподавателя: {selected.feedback}</p> : null}
+            {error ? <p className="field-error">{error}</p> : null}
+            <button type="button" onClick={submit}>Отправить на проверку</button>
+          </>
+        ) : <p className="empty">Выберите задание.</p>}
+      </section>
+    </section>
+  );
+}
+
+function TeacherTasks() {
+  const { dashboard, refresh } = useWorkspace();
+  const [title, setTitle] = useState("Квадратные уравнения");
+  const [body, setBody] = useState("Решите задачи 1-10 и приложите ход решения.");
+  const [studentID, setStudentID] = useState(dashboard.relations[0]?.student_id ?? "");
+  const [error, setError] = useState("");
+  const review = useMemo(() => dashboard.assignments.filter((item) => item.status === "submitted" || item.status === "revision"), [dashboard.assignments]);
+
+  async function create(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    try {
+      await productApi.createAssignment({
+        studentID,
+        title,
+        subject: "Математика",
+        topic: "Квадратные уравнения",
+        body,
+        dueAt: new Date(Date.now() + 48 * 3600_000).toISOString(),
+        maxScore: 100
+      });
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось создать задание");
+    }
+  }
+
+  async function grade(item: Assignment, revision: boolean) {
+    await productApi.gradeAssignment(item.id, revision ? 60 : 92, revision ? "Нужно исправить вторую часть решения." : "Хорошая работа, принято.", revision);
+    await refresh();
+  }
+
+  return (
+    <section className="tasks-layout teacher">
+      <div className="page-title full"><h1>Задания</h1><p>Создавайте задания, проверяйте работы и следите за результатами учеников.</p></div>
+      <div className="metric-row full">
+        <div className="metric"><strong>{review.length}</strong><span>На проверку</span></div>
+        <div className="metric"><strong>{dashboard.assignments.filter((item) => item.status === "revision").length}</strong><span>На исправлении</span></div>
+        <div className="metric"><strong>{dashboard.assignments.filter((item) => item.status === "overdue").length}</strong><span>Просрочено</span></div>
+        <div className="metric"><strong>{dashboard.assignments.filter((item) => item.status === "done").length}</strong><span>Проверено</span></div>
+      </div>
+      <section className="panel">
+        <h2>Создать задание</h2>
+        <form className="form-stack" onSubmit={create}>
+          <label>Ученик<select value={studentID} onChange={(event) => setStudentID(event.target.value)} required>{dashboard.relations.map((relation, index) => <option key={relation.id} value={relation.student_id}>Ученик {index + 1}</option>)}</select></label>
+          <label>Название<input value={title} onChange={(event) => setTitle(event.target.value)} required /></label>
+          <label>Условие<textarea value={body} onChange={(event) => setBody(event.target.value)} rows={5} required /></label>
+          {error ? <p className="field-error">{error}</p> : null}
+          <button type="submit" disabled={!studentID}>Опубликовать</button>
+        </form>
+      </section>
+      <section className="panel">
+        <h2>Нужно проверить</h2>
+        {review.length === 0 ? <p className="empty">Работ на проверку нет.</p> : review.map((item) => (
+          <div key={item.id} className="review-card">
+            <strong>{item.student_name}</strong>
+            <span>{item.title}</span>
+            <p>{item.answer || "Ответ пока не сохранён."}</p>
+            <div className="actions">
+              <button type="button" onClick={() => grade(item, false)}>Принять</button>
+              <button type="button" className="secondary" onClick={() => grade(item, true)}>На исправление</button>
+            </div>
+          </div>
+        ))}
+      </section>
+      <section className="panel full">
+        <h2>Все задания</h2>
+        <div className="tabs"><button className="active">Все</button><button>Черновики</button><button>Назначенные</button><button>На проверку</button><button>Архив</button></div>
+        {dashboard.assignments.map((item) => <p className="task-row static" key={item.id}><strong>{item.title}</strong><span>{item.student_name} · {item.status} · {formatDateTime(item.due_at)}</span></p>)}
+      </section>
+    </section>
+  );
+}
+

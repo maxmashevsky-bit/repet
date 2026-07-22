@@ -1,0 +1,119 @@
+openapi: 3.1.0
+info:
+  title: Tutor Platform Core API
+  version: 0.1.0
+servers:
+  - url: http://localhost:8080
+paths:
+  /healthz:
+    get:
+      responses:
+        "200":
+          description: Process is alive.
+  /readyz:
+    get:
+      responses:
+        "200":
+          description: Database is reachable.
+  /api/v1/me:
+    get:
+      security:
+        - devAuth: []
+      responses:
+        "200":
+          description: Current user.
+  /api/v1/invitations:
+    post:
+      security:
+        - devAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [student_email]
+              properties:
+                student_email:
+                  type: string
+                  format: email
+                student_name:
+                  type: string
+      responses:
+        "201":
+          description: Invitation created.
+  /api/v1/invitations/{token}/accept:
+    post:
+      security:
+        - devAuth: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: Relation created.
+  /api/v1/relations:
+    get:
+      security:
+        - devAuth: []
+      responses:
+        "200":
+          description: Relations visible to current user.
+  /api/v1/lessons:
+    post:
+      security:
+        - devAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [relation_id, title, starts_at, ends_at]
+              properties:
+                relation_id:
+                  type: string
+                  format: uuid
+                title:
+                  type: string
+                starts_at:
+                  type: string
+                  format: date-time
+                ends_at:
+                  type: string
+                  format: date-time
+      responses:
+        "201":
+          description: Lesson scheduled.
+    get:
+      security:
+        - devAuth: []
+      responses:
+        "200":
+          description: Lessons visible to current user.
+  /api/v1/lessons/{lessonID}:
+    get:
+      security:
+        - devAuth: []
+      parameters:
+        - name: lessonID
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Lesson details.
+components:
+  securitySchemes:
+    devAuth:
+      type: apiKey
+      in: header
+      name: X-Dev-User-ID
+

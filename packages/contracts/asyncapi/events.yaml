@@ -1,0 +1,23 @@
+asyncapi: 3.0.0
+info:
+  title: Repet Domain Events
+  version: 0.1.0
+channels:
+  domain-events:
+    address: repet.domain.events
+    messages:
+      DomainEvent:
+        payload:
+          type: object
+          required: [eventId, eventType, occurredAt, producer, schemaVersion, correlationId, organizationId, payload]
+          properties:
+            eventId: { type: string, format: uuid }
+            eventType: { type: string }
+            occurredAt: { type: string, format: date-time }
+            producer: { type: string }
+            schemaVersion: { type: integer }
+            correlationId: { type: string }
+            actorId: { type: string, format: uuid }
+            organizationId: { type: string, format: uuid }
+            payload: { type: object }
+

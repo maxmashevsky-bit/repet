@@ -1,0 +1,14 @@
+.env
+.env.local
+.DS_Store
+.references/
+node_modules/
+.pnpm-store/
+.next/
+dist/
+coverage/
+*.log
+*.tsbuildinfo
+tmp/
+services/core/bin/
+services/core/coverage.out

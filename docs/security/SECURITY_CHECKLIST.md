@@ -1,0 +1,22 @@
+# Security Checklist
+
+- [x] Request ID middleware.
+- [x] Security headers.
+- [x] CORS allowlist.
+- [x] Centralized JSON errors.
+- [x] Object-level authorization for invitations, relations, and lessons.
+- [x] Audit events for important Phase 1 actions.
+- [x] Development auth blocked in production.
+- [x] CI workflow for backend and frontend checks.
+- [x] Make targets for race, vet, staticcheck, govulncheck, gosec, dependency audit, secret scan, container scan, SBOM, and license checks.
+- [ ] Production identity provider.
+- [ ] Email verification.
+- [ ] MFA or passkey for admins.
+- [ ] Refresh token rotation and family revocation.
+- [ ] WebSocket one-time tickets.
+- [ ] File scanning and S3 adapter.
+- [ ] Pin GitHub Actions to commit SHA after online verification of official action digests.
+- [ ] Enforce secret scanning in CI.
+- [ ] Enforce SBOM generation in CI.
+- [ ] Enforce container scanning in CI.
+- [ ] Enforce license allowlist automation in CI.
