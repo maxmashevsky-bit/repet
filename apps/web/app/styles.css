@@ -320,8 +320,8 @@ small { line-height: 1.35; }
 .calendar-side h2 { margin-bottom: 0; text-transform: capitalize; }
 .mini-calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
 .mini-weekdays { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(7, 1fr); color: var(--color-muted); font-size: 11px; text-align: center; }
-.mini-calendar > span { display: grid; place-items: center; height: 32px; border-radius: 50%; color: #5e5851; font-size: 13px; }
-.mini-calendar > span.active { background: var(--color-primary-deep); color: #fff; }
+.mini-calendar > button { display: grid; place-items: center; min-height: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #5e5851; font-size: 13px; }
+.mini-calendar > button.active { background: var(--color-primary-deep); color: #fff; }
 .filters { display: grid; gap: 10px; padding-top: 16px; border-top: 1px solid var(--color-border); }
 .filters label { display: flex; align-items: center; gap: 9px; font-weight: 500; }
 .filters input { width: 18px; height: 18px; min-height: auto; accent-color: var(--color-primary-deep); }
@@ -334,7 +334,7 @@ small { line-height: 1.35; }
 .segmented button { min-height: 38px; border: 0; border-radius: 8px; background: transparent; color: var(--color-muted); }
 .segmented button:hover { background: #f1eee8; color: var(--color-text); }
 .segmented button.active { background: var(--color-primary-soft); color: var(--color-primary-deep); }
-.time-grid { position: relative; min-height: 780px; padding-top: 0; border: 1px solid var(--color-border); border-radius: 12px; background: repeating-linear-gradient(to bottom, transparent 0, transparent 55px, var(--color-border) 56px); overflow: hidden; }
+.time-grid { position: relative; min-height: 1344px; padding-top: 0; border: 1px solid var(--color-border); border-radius: 12px; background: repeating-linear-gradient(to bottom, transparent 0, transparent 55px, var(--color-border) 56px); overflow: hidden; }
 .time-grid.week { padding-top: 62px; background: repeating-linear-gradient(to bottom, transparent 62px, transparent 117px, var(--color-border) 118px), repeating-linear-gradient(to right, transparent 0, transparent calc(14.285% - 1px), var(--color-border) 14.285%); }
 .week-header { height: 62px; position: absolute; left: 72px; right: 0; top: 0; display: grid; grid-template-columns: repeat(7, 1fr); align-items: center; border-bottom: 1px solid var(--color-border); background: rgba(255,255,255,.55); }
 .week-header strong { text-align: center; font-size: 13px; }

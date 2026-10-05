@@ -6,6 +6,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
 	"tutor-platform/services/core/internal/auth"
@@ -62,10 +63,14 @@ func RequestLog(log *slog.Logger) func(http.Handler) http.Handler {
 			start := time.Now()
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 			next.ServeHTTP(ww, r)
+			path := chi.RouteContext(r.Context()).RoutePattern()
+			if path == "" {
+				path = "[unmatched]"
+			}
 			log.Info("http_request",
 				"request_id", middleware.GetReqID(r.Context()),
 				"method", r.Method,
-				"path", r.URL.Path,
+				"path", path,
 				"status", ww.Status(),
 				"duration_ms", time.Since(start).Milliseconds(),
 			)

@@ -20,6 +20,8 @@ type User struct {
 	Email          string    `json:"email"`
 	DisplayName    string    `json:"display_name"`
 	Role           Role      `json:"role"`
+	Timezone       string    `json:"timezone"`
+	Locale         string    `json:"locale"`
 	CreatedAt      time.Time `json:"created_at"`
 }
 

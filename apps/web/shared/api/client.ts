@@ -1,6 +1,6 @@
 import type { Assignment, Conversation, Dashboard, Lesson, Message, NotificationItem, Role, User } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8080";
+const API_BASE = "";
 
 type JsonBody = Record<string, unknown>;
 
@@ -80,6 +80,7 @@ export const productApi = {
       student_email: studentEmail,
       student_name: studentName
     }),
+  acceptInvitation: (token: string) => post<{ id: string }>(`/api/v1/invitations/${encodeURIComponent(token)}/accept`, {}),
   createLesson: (input: { relationID: string; title: string; startsAt: string; endsAt: string }) =>
     post<Lesson>("/api/v1/lessons", {
       relation_id: input.relationID,
@@ -88,8 +89,8 @@ export const productApi = {
       ends_at: input.endsAt
     }),
   conversations: async () => (await request<{ conversations: Conversation[] }>("/api/v1/messages/conversations")).conversations,
-  messages: async (conversationID: string) =>
-    (await request<{ messages: Message[] }>(`/api/v1/messages/conversations/${conversationID}`)).messages,
+  messages: async (conversationID: string, offset = 0) =>
+    (await request<{ messages: Message[] }>(`/api/v1/messages/conversations/${conversationID}?offset=${offset}`)).messages,
   sendMessage: (conversationID: string, body: string) =>
     post<Message>(
       `/api/v1/messages/conversations/${conversationID}`,
@@ -123,4 +124,3 @@ export const productApi = {
   markNotificationRead: (notificationID: string) => post<{ status: string }>(`/api/v1/notifications/${notificationID}/read`, {}),
   markAllNotificationsRead: () => post<{ status: string }>("/api/v1/notifications/mark-all-read", {})
 };
-

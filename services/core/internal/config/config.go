@@ -17,6 +17,10 @@ type Config struct {
 	DevAuthEnabled       bool
 	CookieSecure         bool
 	RequestBodyLimitByte int64
+	SMTPAddr             string
+	SMTPFrom             string
+	SMTPUser             string
+	SMTPPassword         string
 }
 
 func Load() (Config, error) {
@@ -25,9 +29,13 @@ func Load() (Config, error) {
 		HTTPAddr:             getEnv("HTTP_ADDR", ":8080"),
 		DatabaseURL:          getEnv("DATABASE_URL", "postgres://tutor:tutor@localhost:5432/tutor_platform?sslmode=disable"),
 		CORSAllowedOrigins:   splitCSV(getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000")),
-		DevAuthEnabled:       getEnv("DEV_AUTH_ENABLED", "true") == "true",
+		DevAuthEnabled:       getEnv("DEV_AUTH_ENABLED", "false") == "true",
 		CookieSecure:         getEnv("COOKIE_SECURE", "false") == "true",
 		RequestBodyLimitByte: parseInt64(getEnv("REQUEST_BODY_LIMIT_BYTES", "1048576"), 1048576),
+		SMTPAddr:             getEnv("SMTP_ADDR", "127.0.0.1:1025"),
+		SMTPFrom:             getEnv("SMTP_FROM", "no-reply@repet.local"),
+		SMTPUser:             getEnv("SMTP_USER", ""),
+		SMTPPassword:         getEnv("SMTP_PASSWORD", ""),
 	}
 	if err := cfg.Validate(); err != nil {
 		return Config{}, err
@@ -41,6 +49,9 @@ func (c Config) Validate() error {
 	}
 	if c.AppEnv == "production" && c.DevAuthEnabled {
 		return errors.New("development auth cannot be enabled in production")
+	}
+	if c.AppEnv == "production" && !c.CookieSecure {
+		return errors.New("COOKIE_SECURE must be enabled in production")
 	}
 	if _, err := url.Parse(c.DatabaseURL); err != nil {
 		return fmt.Errorf("invalid DATABASE_URL: %w", err)

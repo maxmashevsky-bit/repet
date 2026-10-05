@@ -1,35 +1,400 @@
 openapi: 3.1.0
 info:
-  title: Repet Core Compatibility API
-  version: 0.2.0
+  title: Repet Core API
+  version: 0.3.0
+servers:
+  - url: /api/v1
+security:
+  - session: []
 paths:
-  /api/v1/auth/register:
+  /auth/register:
     post:
-      summary: Register student or tutor and create session.
+      security: []
+      summary: Register a tutor or student and set a session cookie.
+      requestBody:
+        $ref: '#/components/requestBodies/Register'
       responses:
-        "201": { description: Created }
-  /api/v1/auth/login:
+        '201': { description: Registered, content: { application/json: { schema: { $ref: '#/components/schemas/UserEnvelope' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /auth/login:
     post:
-      summary: Login with email and password.
+      security: []
+      requestBody:
+        $ref: '#/components/requestBodies/Login'
       responses:
-        "200": { description: Logged in }
-  /api/v1/dashboard:
-    get:
-      summary: Compatibility dashboard view model.
-      responses:
-        "200": { description: Dashboard }
-  /api/v1/messages/conversations:
-    get:
-      summary: List visible conversations.
-      responses:
-        "200": { description: Conversations }
-  /api/v1/assignments:
-    get:
-      summary: List visible assignments.
-      responses:
-        "200": { description: Assignments }
+        '200': { description: Logged in, content: { application/json: { schema: { $ref: '#/components/schemas/UserEnvelope' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/logout:
     post:
-      summary: Teacher publishes an assignment.
       responses:
-        "201": { description: Created }
-
+        '200': { description: Session revoked and cookie cleared }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/forgot-password:
+    post:
+      security: []
+      requestBody:
+        $ref: '#/components/requestBodies/ForgotPassword'
+      responses:
+        '200': { description: Generic acknowledgement, even for an unknown email }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /auth/reset-password:
+    post:
+      security: []
+      requestBody:
+        $ref: '#/components/requestBodies/ResetPassword'
+      responses:
+        '200': { description: Password changed and sessions revoked }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '422': { $ref: '#/components/responses/InvalidState' }
+  /me:
+    get:
+      responses:
+        '200': { description: Current user, content: { application/json: { schema: { $ref: '#/components/schemas/User' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /profile:
+    get:
+      responses:
+        '200': { description: Current profile, content: { application/json: { schema: { $ref: '#/components/schemas/User' } } } }
+    post:
+      requestBody:
+        $ref: '#/components/requestBodies/Profile'
+      responses:
+        '200': { description: Updated profile, content: { application/json: { schema: { $ref: '#/components/schemas/User' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /dashboard:
+    get:
+      responses:
+        '200': { description: Current user's dashboard, content: { application/json: { schema: { $ref: '#/components/schemas/Dashboard' } } } }
+  /invitations:
+    post:
+      requestBody:
+        $ref: '#/components/requestBodies/Invitation'
+      responses:
+        '201': { description: Invitation with one-time acceptance URL and token }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /invitations/{token}/accept:
+    parameters:
+      - { name: token, in: path, required: true, schema: { type: string } }
+    post:
+      responses:
+        '201': { description: Relation created, content: { application/json: { schema: { $ref: '#/components/schemas/Relation' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/InvalidState' }
+  /relations:
+    get:
+      responses:
+        '200': { description: Visible relations }
+  /lessons:
+    get:
+      parameters:
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 100000, default: 0 } }
+      responses:
+        '200': { description: Visible lessons, up to 100 }
+    post:
+      requestBody:
+        $ref: '#/components/requestBodies/Lesson'
+      responses:
+        '201': { description: Scheduled lesson, content: { application/json: { schema: { $ref: '#/components/schemas/Lesson' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /lessons/{lessonID}:
+    parameters:
+      - { name: lessonID, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      responses:
+        '200': { description: Visible lesson, content: { application/json: { schema: { $ref: '#/components/schemas/Lesson' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /messages/conversations:
+    get:
+      responses:
+        '200': { description: Visible conversations, up to 100 }
+  /messages/conversations/{conversationID}:
+    parameters:
+      - { name: conversationID, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      parameters:
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 100000, default: 0 } }
+      responses:
+        '200': { description: Up to 80 messages in chronological order, from the requested newest-first page }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      parameters:
+        - { name: Idempotency-Key, in: header, schema: { type: string, maxLength: 120 } }
+      requestBody:
+        $ref: '#/components/requestBodies/Message'
+      responses:
+        '201': { description: Stored message, content: { application/json: { schema: { $ref: '#/components/schemas/Message' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /assignments:
+    get:
+      parameters:
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 100000, default: 0 } }
+      responses:
+        '200': { description: Visible assignments, up to 100 }
+    post:
+      requestBody:
+        $ref: '#/components/requestBodies/Assignment'
+      responses:
+        '201': { description: Published assignment, content: { application/json: { schema: { $ref: '#/components/schemas/Assignment' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /assignments/{assignmentID}/submit:
+    parameters:
+      - { name: assignmentID, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      requestBody:
+        $ref: '#/components/requestBodies/Submission'
+      responses:
+        '200': { description: Submitted assignment, content: { application/json: { schema: { $ref: '#/components/schemas/Assignment' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/InvalidState' }
+  /assignments/{assignmentID}/grade:
+    parameters:
+      - { name: assignmentID, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      requestBody:
+        $ref: '#/components/requestBodies/Grade'
+      responses:
+        '200': { description: Graded assignment, content: { application/json: { schema: { $ref: '#/components/schemas/Assignment' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/InvalidState' }
+  /notifications:
+    get:
+      parameters:
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 100000, default: 0 } }
+      responses:
+        '200': { description: Latest 30 notifications for current user }
+  /notifications/{notificationID}/read:
+    parameters:
+      - { name: notificationID, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      responses:
+        '200': { description: Notification marked read }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /notifications/mark-all-read:
+    post:
+      responses:
+        '200': { description: Current user's notifications marked read }
+components:
+  securitySchemes:
+    session: { type: apiKey, in: cookie, name: repet_session }
+  responses:
+    BadRequest: { description: Invalid request }
+    Unauthorized: { description: Authentication required }
+    Forbidden: { description: Permission denied }
+    NotFound: { description: Resource not found or inaccessible }
+    Conflict: { description: Resource conflict }
+    InvalidState: { description: Invalid resource state }
+  requestBodies:
+    Register:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [display_name, email, password, role, accept_terms]
+            properties:
+              display_name: { type: string, minLength: 1, maxLength: 120 }
+              email: { type: string, format: email, maxLength: 254 }
+              password: { type: string, minLength: 8, maxLength: 72 }
+              role: { type: string, enum: [tutor, student] }
+              accept_terms: { type: boolean, const: true }
+    Login:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [email, password]
+            properties:
+              email: { type: string, format: email }
+              password: { type: string }
+    ForgotPassword:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [email]
+            properties:
+              email: { type: string, format: email }
+    ResetPassword:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [token, password]
+            properties:
+              token: { type: string }
+              password: { type: string, minLength: 8, maxLength: 72 }
+    Profile:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [display_name, timezone, locale]
+            properties:
+              display_name: { type: string }
+              timezone: { type: string }
+              locale: { type: string }
+    Invitation:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [student_email]
+            properties:
+              student_email: { type: string, format: email }
+              student_name: { type: string }
+    Lesson:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [relation_id, title, starts_at, ends_at]
+            properties:
+              relation_id: { type: string, format: uuid }
+              title: { type: string }
+              starts_at: { type: string, format: date-time }
+              ends_at: { type: string, format: date-time }
+    Message:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [body]
+            properties:
+              body: { type: string, minLength: 1, maxLength: 4000 }
+    Assignment:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [student_id, title, subject, topic, body, due_at, max_score]
+            properties:
+              student_id: { type: string, format: uuid }
+              title: { type: string }
+              subject: { type: string }
+              topic: { type: string }
+              body: { type: string }
+              due_at: { type: string, format: date-time }
+              max_score: { type: integer, minimum: 1, maximum: 1000 }
+    Submission:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [answer]
+            properties:
+              answer: { type: string, minLength: 1, maxLength: 8000 }
+    Grade:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [score, feedback, revision]
+            properties:
+              score: { type: integer, minimum: 0 }
+              feedback: { type: string, maxLength: 4000 }
+              revision: { type: boolean }
+  schemas:
+    UserEnvelope:
+      type: object
+      required: [user]
+      properties:
+        user: { $ref: '#/components/schemas/User' }
+    User:
+      type: object
+      required: [id, organization_id, email, display_name, role, timezone, locale, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        organization_id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        display_name: { type: string }
+        role: { type: string, enum: [tutor, student, admin] }
+        timezone: { type: string }
+        locale: { type: string }
+        created_at: { type: string, format: date-time }
+    Relation:
+      type: object
+      required: [id, tutor_id, student_id, status, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        tutor_id: { type: string, format: uuid }
+        student_id: { type: string, format: uuid }
+        status: { type: string }
+        created_at: { type: string, format: date-time }
+    Lesson:
+      type: object
+      required: [id, relation_id, tutor_id, student_id, title, starts_at, ends_at, status, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        relation_id: { type: string, format: uuid }
+        tutor_id: { type: string, format: uuid }
+        student_id: { type: string, format: uuid }
+        title: { type: string }
+        starts_at: { type: string, format: date-time }
+        ends_at: { type: string, format: date-time }
+        status: { type: string }
+        created_at: { type: string, format: date-time }
+    Message:
+      type: object
+      required: [id, conversation_id, author_id, body, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        conversation_id: { type: string, format: uuid }
+        author_id: { type: string, format: uuid }
+        body: { type: string }
+        created_at: { type: string, format: date-time }
+    Assignment:
+      type: object
+      required: [id, tutor_id, student_id, student_name, title, subject, topic, body, status, due_at, max_score, feedback, answer, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        tutor_id: { type: string, format: uuid }
+        student_id: { type: string, format: uuid }
+        student_name: { type: string }
+        title: { type: string }
+        subject: { type: string }
+        topic: { type: string }
+        body: { type: string }
+        status: { type: string, enum: [draft, assigned, submitted, revision, done, overdue, archived] }
+        due_at: { type: string, format: date-time }
+        max_score: { type: integer }
+        score: { type: integer }
+        feedback: { type: string }
+        answer: { type: string }
+        created_at: { type: string, format: date-time }
+    Dashboard:
+      type: object
+      required: [user, relations, lessons, assignments, conversations, notifications]
+      properties:
+        user: { $ref: '#/components/schemas/User' }
+        relations: { type: array, items: { $ref: '#/components/schemas/Relation' } }
+        lessons: { type: array, items: { $ref: '#/components/schemas/Lesson' } }
+        assignments: { type: array, items: { $ref: '#/components/schemas/Assignment' } }
+        conversations: { type: array, items: { type: object } }
+        notifications: { type: array, items: { type: object } }

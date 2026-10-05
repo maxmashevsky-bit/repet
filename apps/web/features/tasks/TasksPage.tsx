@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { productApi } from "../../shared/api/client";
 import type { Assignment } from "../../shared/api/types";
 import { formatDateTime } from "../../shared/lib/date";
@@ -15,9 +16,14 @@ export function TasksPage() {
 
 function StudentTasks() {
   const { dashboard, refresh } = useWorkspace();
-  const [selected, setSelected] = useState<Assignment | null>(dashboard.assignments[0] ?? null);
+	const search = useSearchParams();
+	const [selectedID, setSelectedID] = useState(search.get("task") ?? dashboard.assignments[0]?.id ?? "");
+	const selected = dashboard.assignments.find((item) => item.id === selectedID) ?? dashboard.assignments[0] ?? null;
   const [answer, setAnswer] = useState(selected?.answer ?? "");
   const [error, setError] = useState("");
+	const [filter, setFilter] = useState("Все");
+	const [query, setQuery] = useState("");
+	const visible = dashboard.assignments.filter((item) => (filter === "Все" || filter === "Нужно сделать" && ["assigned", "revision"].includes(item.status) || filter === "На проверке" && item.status === "submitted" || filter === "Проверено" && item.status === "done") && item.title.toLowerCase().includes(query.toLowerCase()));
 
   async function submit() {
     if (!selected) return;
@@ -32,26 +38,26 @@ function StudentTasks() {
 
   return (
     <section className="tasks-layout">
-      <div className="page-title full"><h1>Задания</h1><p>Домашние работы, тесты и задания с занятий.</p></div>
+      <div className="page-title full"><h1>Задания</h1><p>Домашние работы и обратная связь преподавателя.</p></div>
       <div className="tasks-toolbar full">
-        <div className="tabs"><button className="active">Нужно сделать <span>{dashboard.assignments.filter((item) => item.status !== "done").length}</span></button><button>В процессе</button><button>На проверке</button><button>Проверено</button><button>Все</button></div>
-        <label className="search-field"><Icon name="search" size={19} /><input aria-label="Найти задание" placeholder="Найти задание" /></label>
+        <div className="tabs">{["Нужно сделать", "На проверке", "Проверено", "Все"].map((item) => <button key={item} type="button" className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{item}</button>)}</div>
+        <label className="search-field"><Icon name="search" size={19} /><input aria-label="Найти задание" placeholder="Найти задание" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
       </div>
       <article className="hero-card task-hero full">
         <BrandMark decorative />
         <div className="hero-content">
           <p className="eyebrow">Продолжить задание</p>
           <h2>{selected?.title ?? "Заданий пока нет"}</h2>
-          <p className="hero-meta">{selected ? <><Icon name="user" size={18} />{selected.topic}<span>·</span><Icon name="calendar" size={18} />Сдать до {formatDateTime(selected.due_at)}</> : "Когда преподаватель назначит работу, она появится здесь."}</p>
-          {selected ? <><p className="hero-topic">Выполнено 6 из 10 заданий</p><div className="hero-progress"><span style={{ width: "60%" }} /><b>60%</b></div><div className="actions hero-actions"><a className="button hero-primary" href="#task-work">Продолжить <Icon name="arrow" size={18} /></a><button className="hero-secondary" type="button">Открыть конспект <Icon name="task" size={18} /></button></div></> : null}
+          <p className="hero-meta">{selected ? <><Icon name="user" size={18} />{selected.topic}<span>·</span><Icon name="calendar" size={18} />Сдать до {formatDateTime(selected.due_at, dashboard.user.timezone)}</> : "Когда преподаватель назначит работу, она появится здесь."}</p>
+          {selected ? <div className="actions hero-actions"><a className="button hero-primary" href="#task-work">Открыть задание <Icon name="arrow" size={18} /></a></div> : null}
         </div>
       </article>
       <section className="panel">
         <h2>Мои задания</h2>
-        {dashboard.assignments.length === 0 ? <p className="empty">Нет назначенных заданий.</p> : dashboard.assignments.map((item) => (
-          <button key={item.id} type="button" className={selected?.id === item.id ? "task-row active" : "task-row"} onClick={() => { setSelected(item); setAnswer(item.answer); }}>
-            <span className={item.status === "overdue" ? "soft-icon terracotta-soft" : "soft-icon"}><Icon name="task" size={19} /></span>
-            <span className="task-copy"><strong>{item.title}</strong><small>{item.status} · до {formatDateTime(item.due_at)}</small></span>
+        {visible.length === 0 ? <p className="empty">Заданий нет.</p> : visible.map((item) => (
+          <button key={item.id} type="button" className={selected?.id === item.id ? "task-row active" : "task-row"} onClick={() => { setSelectedID(item.id); setAnswer(item.answer); }}>
+            <span className={item.status === "assigned" && new Date(item.due_at) < new Date() ? "soft-icon terracotta-soft" : "soft-icon"}><Icon name="task" size={19} /></span>
+            <span className="task-copy"><strong>{item.title}</strong><small>{item.status} · до {formatDateTime(item.due_at, dashboard.user.timezone)}</small></span>
             <Icon name="chevron" size={18} />
           </button>
         ))}
@@ -64,7 +70,8 @@ function StudentTasks() {
             <label>Ответ<textarea value={answer} onChange={(event) => setAnswer(event.target.value)} rows={7} /></label>
             {selected.feedback ? <p className="notice">Комментарий преподавателя: {selected.feedback}</p> : null}
             {error ? <p className="field-error">{error}</p> : null}
-            <button type="button" onClick={submit}>Отправить на проверку</button>
+            {selected.score != null ? <p className="notice">Оценка: {selected.score} / {selected.max_score}</p> : null}
+            {selected.status === "assigned" || selected.status === "revision" ? <button type="button" onClick={submit} disabled={!answer.trim()}>Отправить на проверку</button> : null}
           </>
         ) : <p className="empty">Выберите задание.</p>}
       </section>
@@ -74,11 +81,19 @@ function StudentTasks() {
 
 function TeacherTasks() {
   const { dashboard, refresh } = useWorkspace();
-  const [title, setTitle] = useState("Квадратные уравнения");
-  const [body, setBody] = useState("Решите задачи 1-10 и приложите ход решения.");
+  const [title, setTitle] = useState("");
+  const [subject, setSubject] = useState("");
+  const [topic, setTopic] = useState("");
+  const [body, setBody] = useState("");
+  const [dueAt, setDueAt] = useState("");
+  const [maxScore, setMaxScore] = useState(100);
   const [studentID, setStudentID] = useState(dashboard.relations[0]?.student_id ?? "");
   const [error, setError] = useState("");
-  const review = useMemo(() => dashboard.assignments.filter((item) => item.status === "submitted" || item.status === "revision"), [dashboard.assignments]);
+  const [reviewID, setReviewID] = useState("");
+  const [score, setScore] = useState(0);
+  const [feedback, setFeedback] = useState("");
+  const [filter, setFilter] = useState("Все");
+  const review = useMemo(() => dashboard.assignments.filter((item) => item.status === "submitted"), [dashboard.assignments]);
 
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -87,21 +102,30 @@ function TeacherTasks() {
       await productApi.createAssignment({
         studentID,
         title,
-        subject: "Математика",
-        topic: "Квадратные уравнения",
+        subject,
+        topic,
         body,
-        dueAt: new Date(Date.now() + 48 * 3600_000).toISOString(),
-        maxScore: 100
+        dueAt: new Date(dueAt).toISOString(),
+        maxScore
       });
       await refresh();
+      setTitle("");
+      setBody("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось создать задание");
     }
   }
 
   async function grade(item: Assignment, revision: boolean) {
-    await productApi.gradeAssignment(item.id, revision ? 60 : 92, revision ? "Нужно исправить вторую часть решения." : "Хорошая работа, принято.", revision);
-    await refresh();
+    setError("");
+    try {
+      await productApi.gradeAssignment(item.id, score, feedback, revision);
+      await refresh();
+      setReviewID("");
+      setFeedback("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось проверить работу");
+    }
   }
 
   return (
@@ -110,15 +134,19 @@ function TeacherTasks() {
       <div className="metric-row full">
         <div className="metric"><span className="soft-icon"><Icon name="task" /></span><span>На проверку<strong>{review.length}</strong></span></div>
         <div className="metric"><span className="soft-icon terracotta-soft"><Icon name="task" /></span><span>На исправлении<strong>{dashboard.assignments.filter((item) => item.status === "revision").length}</strong></span></div>
-        <div className="metric"><span className="soft-icon danger-soft"><Icon name="clock" /></span><span>Просрочено<strong>{dashboard.assignments.filter((item) => item.status === "overdue").length}</strong></span></div>
+        <div className="metric"><span className="soft-icon danger-soft"><Icon name="clock" /></span><span>Просрочено<strong>{dashboard.assignments.filter((item) => item.status === "assigned" && new Date(item.due_at) < new Date()).length}</strong></span></div>
         <div className="metric"><span className="soft-icon"><Icon name="chart" /></span><span>Проверено<strong>{dashboard.assignments.filter((item) => item.status === "done").length}</strong></span></div>
       </div>
       <section className="panel" id="create-assignment">
         <h2>Создать задание</h2>
         <form className="form-stack" onSubmit={create}>
-          <label>Ученик<select value={studentID} onChange={(event) => setStudentID(event.target.value)} required>{dashboard.relations.map((relation, index) => <option key={relation.id} value={relation.student_id}>Ученик {index + 1}</option>)}</select></label>
+          <label>Ученик<select value={studentID} onChange={(event) => setStudentID(event.target.value)} required>{dashboard.relations.map((relation) => <option key={relation.id} value={relation.student_id}>{dashboard.conversations.find((item) => item.student_id === relation.student_id)?.student_name ?? relation.student_id}</option>)}</select></label>
           <label>Название<input value={title} onChange={(event) => setTitle(event.target.value)} required /></label>
+          <label>Предмет<input value={subject} onChange={(event) => setSubject(event.target.value)} /></label>
+          <label>Тема<input value={topic} onChange={(event) => setTopic(event.target.value)} /></label>
           <label>Условие<textarea value={body} onChange={(event) => setBody(event.target.value)} rows={5} required /></label>
+          <label>Срок сдачи<input type="datetime-local" value={dueAt} onChange={(event) => setDueAt(event.target.value)} required /></label>
+          <label>Максимум баллов<input type="number" min={1} max={1000} value={maxScore} onChange={(event) => setMaxScore(Number(event.target.value))} required /></label>
           {error ? <p className="field-error">{error}</p> : null}
           <button type="submit" disabled={!studentID}>Опубликовать</button>
         </form>
@@ -130,17 +158,14 @@ function TeacherTasks() {
             <strong>{item.student_name}</strong>
             <span>{item.title}</span>
             <p>{item.answer || "Ответ пока не сохранён."}</p>
-            <div className="actions">
-              <button type="button" onClick={() => grade(item, false)}>Принять</button>
-              <button type="button" className="secondary" onClick={() => grade(item, true)}>На исправление</button>
-            </div>
+            {reviewID === item.id ? <><label>Баллы<input type="number" min={0} max={item.max_score} value={score} onChange={(event) => setScore(Number(event.target.value))} /></label><label>Комментарий<textarea value={feedback} onChange={(event) => setFeedback(event.target.value)} /></label><div className="actions"><button type="button" onClick={() => grade(item, false)}>Принять</button><button type="button" className="secondary" onClick={() => grade(item, true)}>На исправление</button></div></> : <button type="button" onClick={() => { setReviewID(item.id); setScore(0); setFeedback(""); }}>Проверить</button>}
           </div>
         ))}
       </section>
       <section className="panel full">
         <h2>Все задания</h2>
-        <div className="tabs"><button className="active">Все</button><button>Черновики</button><button>Назначенные</button><button>На проверку</button><button>Архив</button></div>
-        {dashboard.assignments.map((item) => <p className="task-row static" key={item.id}><strong>{item.title}</strong><span>{item.student_name} · {item.status} · {formatDateTime(item.due_at)}</span></p>)}
+        <div className="tabs">{["Все", "Назначенные", "На проверку", "Проверено"].map((item) => <button key={item} type="button" className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{item}</button>)}</div>
+        {dashboard.assignments.filter((item) => filter === "Все" || filter === "Назначенные" && item.status === "assigned" || filter === "На проверку" && item.status === "submitted" || filter === "Проверено" && item.status === "done").map((item) => <p className="task-row static" key={item.id}><strong>{item.title}</strong><span>{item.student_name} · {item.status} · {formatDateTime(item.due_at, dashboard.user.timezone)}</span></p>)}
       </section>
     </section>
   );

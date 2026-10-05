@@ -1,7 +1,7 @@
 {
   "name": "tutor-platform",
   "private": true,
-  "packageManager": "pnpm@10.13.1",
+  "packageManager": "pnpm@11.19.0",
   "scripts": {
     "web:dev": "pnpm --dir apps/web dev",
     "web:build": "pnpm --dir apps/web build",
@@ -9,4 +9,3 @@
     "web:lint": "pnpm --dir apps/web lint"
   }
 }
-

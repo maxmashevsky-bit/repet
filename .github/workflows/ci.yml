@@ -11,6 +11,22 @@ permissions:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: tutor
+          POSTGRES_PASSWORD: tutor
+          POSTGRES_DB: tutor_platform
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tutor -d tutor_platform"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgres://tutor:tutor@127.0.0.1:5432/tutor_platform?sslmode=disable
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,11 +58,13 @@ jobs:
         run: corepack enable
       - name: Install
         working-directory: apps/web
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Typecheck
         working-directory: apps/web
         run: pnpm typecheck
+      - name: Lint
+        working-directory: apps/web
+        run: pnpm lint
       - name: Build
         working-directory: apps/web
         run: pnpm build
-

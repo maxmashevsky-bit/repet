@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 	"tutor-platform/services/core/internal/auth"
 	"tutor-platform/services/core/internal/config"
 	"tutor-platform/services/core/internal/domain"
+	"tutor-platform/services/core/internal/platform"
 	"tutor-platform/services/core/internal/store"
 )
 
@@ -122,7 +124,11 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	}
 	user, token, err := s.store.LoginUser(r.Context(), req.Email, req.Password, r.UserAgent(), r.RemoteAddr)
 	if err != nil {
-		WriteError(w, ErrUnauthorized)
+		if errors.Is(err, ErrUnauthorized) {
+			WriteError(w, ErrUnauthorized)
+		} else {
+			WriteError(w, err)
+		}
 		return
 	}
 	s.setSessionCookie(w, token)
@@ -131,7 +137,10 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 	if cookie, err := r.Cookie(store.SessionCookieName); err == nil {
-		_ = s.store.RevokeSession(r.Context(), cookie.Value)
+		if err := s.store.RevokeSession(r.Context(), cookie.Value); err != nil {
+			WriteError(w, err)
+			return
+		}
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     store.SessionCookieName,
@@ -153,6 +162,18 @@ func (s *Server) forgotPassword(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, ErrBadRequest)
 		return
 	}
+	token, email, err := s.store.IssuePasswordReset(r.Context(), req.Email)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+	if token != "" {
+		if err := sendResetEmail(r.Context(), s.cfg, email, token); err != nil {
+			s.log.Error("password reset email failed", "error", err)
+			WriteError(w, ErrInternal)
+			return
+		}
+	}
 	WriteJSON(w, http.StatusOK, map[string]string{"status": "if_account_exists_email_will_be_sent"})
 }
 
@@ -161,11 +182,15 @@ func (s *Server) resetPassword(w http.ResponseWriter, r *http.Request) {
 		Token    string `json:"token"`
 		Password string `json:"password"`
 	}
-	if err := decodeJSON(r, &req); err != nil || len(req.Token) < 16 || len(req.Password) < 8 {
+	if err := decodeJSON(r, &req); err != nil {
 		WriteError(w, ErrBadRequest)
 		return
 	}
-	WriteJSON(w, http.StatusAccepted, map[string]string{"status": "reset_flow_stubbed"})
+	if err := s.store.ResetPassword(r.Context(), req.Token, req.Password); err != nil {
+		WriteError(w, err)
+		return
+	}
+	WriteJSON(w, http.StatusOK, map[string]string{"status": "password_updated"})
 }
 
 func (s *Server) me(w http.ResponseWriter, r *http.Request) {
@@ -263,7 +288,7 @@ func (s *Server) createInvitation(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusCreated, map[string]any{
 		"invitation": inv,
 		"token":      token,
-		"accept_url": "/invitations/" + token + "/accept",
+		"accept_url": "/invite/" + token,
 	})
 }
 
@@ -325,7 +350,12 @@ func (s *Server) listLessons(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, err)
 		return
 	}
-	lessons, err := s.store.ListLessons(r.Context(), user)
+	offset, err := pageOffset(r)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+	lessons, err := s.store.ListLessonsPage(r.Context(), user, offset)
 	if err != nil {
 		WriteError(w, err)
 		return
@@ -367,7 +397,12 @@ func (s *Server) listMessages(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, err)
 		return
 	}
-	items, err := s.store.ListMessages(r.Context(), user, chi.URLParam(r, "conversationID"))
+	offset, err := pageOffset(r)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+	items, err := s.store.ListMessages(r.Context(), user, chi.URLParam(r, "conversationID"), offset)
 	if err != nil {
 		WriteError(w, err)
 		return
@@ -390,7 +425,11 @@ func (s *Server) sendMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	key := r.Header.Get("Idempotency-Key")
 	if key == "" {
-		key = strconv.FormatInt(time.Now().UnixNano(), 10)
+		key, err = platform.NewUUID()
+		if err != nil {
+			WriteError(w, err)
+			return
+		}
 	}
 	msg, err := s.store.SendMessage(r.Context(), user, chi.URLParam(r, "conversationID"), req.Body, key)
 	if err != nil {
@@ -406,7 +445,12 @@ func (s *Server) listAssignments(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, err)
 		return
 	}
-	items, err := s.store.ListAssignments(r.Context(), user)
+	offset, err := pageOffset(r)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+	items, err := s.store.ListAssignmentsPage(r.Context(), user, offset)
 	if err != nil {
 		WriteError(w, err)
 		return
@@ -469,7 +513,7 @@ func (s *Server) gradeAssignment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Score    int    `json:"score"`
+		Score    *int   `json:"score"`
 		Feedback string `json:"feedback"`
 		Revision bool   `json:"revision"`
 	}
@@ -477,7 +521,11 @@ func (s *Server) gradeAssignment(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, err)
 		return
 	}
-	item, err := s.store.GradeAssignment(r.Context(), user, chi.URLParam(r, "assignmentID"), req.Score, req.Feedback, req.Revision)
+	if req.Score == nil {
+		WriteError(w, ErrBadRequest)
+		return
+	}
+	item, err := s.store.GradeAssignment(r.Context(), user, chi.URLParam(r, "assignmentID"), *req.Score, req.Feedback, req.Revision)
 	if err != nil {
 		WriteError(w, err)
 		return
@@ -491,7 +539,12 @@ func (s *Server) listNotifications(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, err)
 		return
 	}
-	items, err := s.store.ListNotifications(r.Context(), user)
+	offset, err := pageOffset(r)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+	items, err := s.store.ListNotificationsPage(r.Context(), user, offset)
 	if err != nil {
 		WriteError(w, err)
 		return
@@ -590,4 +643,16 @@ func decodeJSON(r *http.Request, target any) error {
 		return ErrBadRequest
 	}
 	return nil
+}
+
+func pageOffset(r *http.Request) (int, error) {
+	value := r.URL.Query().Get("offset")
+	if value == "" {
+		return 0, nil
+	}
+	offset, err := strconv.Atoi(value)
+	if err != nil || offset < 0 || offset > 100000 {
+		return 0, ErrBadRequest
+	}
+	return offset, nil
 }

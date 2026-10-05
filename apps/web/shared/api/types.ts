@@ -6,6 +6,8 @@ export type User = {
   email: string;
   display_name: string;
   role: Role;
+  timezone: string;
+  locale: string;
   created_at: string;
 };
 
@@ -36,7 +38,6 @@ export type Conversation = {
   student_id: string;
   student_name: string;
   last_message: string;
-  unread_count: number;
   created_at: string;
 };
 
@@ -83,4 +84,3 @@ export type Dashboard = {
   conversations: Conversation[];
   notifications: NotificationItem[];
 };
-

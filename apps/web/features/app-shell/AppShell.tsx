@@ -46,7 +46,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
-    void refresh();
+    productApi.dashboard().then(setDashboard).catch((err: unknown) => setError(err instanceof Error ? err.message : "Не удалось загрузить данные"));
   }, []);
 
   async function logout() {
@@ -131,9 +131,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="support-link disabled">Поддержать создателя ♥</span>
           )}
           <nav aria-label="Ссылки в подвале">
-            <Link href="/settings">Помощь</Link>
-            <Link href="/settings#privacy">Конфиденциальность</Link>
-            <span>© 2026 Репет</span>
+            <Link href="/privacy">Конфиденциальность</Link>
+            <span>© {new Date().getFullYear()} Репет</span>
           </nav>
         </footer>
       </div>

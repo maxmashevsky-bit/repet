@@ -8,15 +8,20 @@ import { Icon } from "../ui/Icon";
 export function SettingsPage() {
   const { dashboard, refresh } = useWorkspace();
   const [displayName, setDisplayName] = useState(dashboard.user.display_name);
-  const [timezone, setTimezone] = useState("Europe/Moscow");
-  const [locale, setLocale] = useState("ru");
+  const [timezone, setTimezone] = useState(dashboard.user.timezone);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await productApi.updateProfile({ displayName, timezone, locale });
-    await refresh();
-    setMessage("Изменения сохранены");
+    setError("");
+    try {
+      await productApi.updateProfile({ displayName, timezone, locale: dashboard.user.locale });
+      await refresh();
+      setMessage("Изменения сохранены");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось сохранить профиль");
+    }
   }
 
   async function logout() {
@@ -30,10 +35,7 @@ export function SettingsPage() {
       <aside className="panel settings-nav" aria-label="Разделы настроек">
         <a className="active" href="#profile"><Icon name="user" />Профиль</a>
         <a href="#security"><Icon name="lock" />Безопасность</a>
-        <a href="#notifications"><Icon name="bell" />Уведомления</a>
         <a href="#privacy"><Icon name="shield" />Приватность</a>
-        <a href="#appearance"><Icon name="palette" />Оформление</a>
-        <a href="#language"><Icon name="globe" />Язык</a>
         <button type="button" className="danger-link" onClick={logout}>Выйти</button>
       </aside>
       <form id="profile" className="panel form-stack" onSubmit={save}>
@@ -42,26 +44,18 @@ export function SettingsPage() {
         <label>Имя<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} required /></label>
         <label>Email<input value={dashboard.user.email} disabled /></label>
         <label>Часовой пояс<input value={timezone} onChange={(event) => setTimezone(event.target.value)} required /></label>
-        <label>Язык<select value={locale} onChange={(event) => setLocale(event.target.value)}><option value="ru">Русский</option><option value="en">English</option></select></label>
         <button type="submit">Сохранить изменения</button>
+        {error ? <p className="field-error">{error}</p> : null}
         {message ? <p className="status-ok">{message}</p> : null}
       </form>
       <section id="security" className="panel">
         <h2>Безопасность</h2>
-        <p className="settings-row"><span><Icon name="lock" />Изменить пароль</span><Icon name="chevron" /></p>
-        <p className="settings-row"><span><Icon name="shield" />Двухэтапная проверка</span><b>Включена</b></p>
-        <p className="settings-row"><span><Icon name="monitor" />Активные сессии</span><small>Этот компьютер · сейчас</small></p>
-      </section>
-      <section id="notifications" className="panel">
-        <h2>Уведомления</h2>
-        <label className="toggle-row">Сообщения преподавателя<input type="checkbox" defaultChecked /></label>
-        <label className="toggle-row">Занятия за 15 минут<input type="checkbox" defaultChecked /></label>
-        <label className="toggle-row">Задания и проверка<input type="checkbox" defaultChecked /></label>
+        <p>Чтобы завершить сеанс на этом устройстве, выйдите из аккаунта.</p>
       </section>
       <section id="privacy" className="panel">
         <h2>Приватность</h2>
         <p>Роль нельзя изменить как обычную настройку. Для смены роли нужен отдельный проверяемый процесс.</p>
-        <button type="button" className="secondary">Запросить удаление аккаунта</button>
+        <a href="/privacy">Политика конфиденциальности</a>
       </section>
     </section>
   );

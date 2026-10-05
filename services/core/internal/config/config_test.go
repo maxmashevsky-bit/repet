@@ -14,3 +14,15 @@ func TestProductionRejectsDevAuth(t *testing.T) {
 		t.Fatal("expected production config with dev auth to fail")
 	}
 }
+
+func TestProductionRequiresSecureCookie(t *testing.T) {
+	cfg := Config{
+		AppEnv:               "production",
+		DatabaseURL:          "postgres://example",
+		CORSAllowedOrigins:   []string{"https://example.test"},
+		RequestBodyLimitByte: 1,
+	}
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected production config with insecure cookie to fail")
+	}
+}

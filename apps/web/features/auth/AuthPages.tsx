@@ -112,8 +112,6 @@ export function RegisterPage() {
         </label>
         {error ? <p className="field-error">{error}</p> : null}
         <button type="submit" disabled={loading || !acceptTerms}>{loading ? "Создаём..." : "Создать аккаунт"}</button>
-        <div className="auth-divider"><span>или</span></div>
-        <button type="button" className="oauth-button" disabled><span className="google-mark">G</span>Продолжить с Google</button>
       </form>
       <p className="centered">Уже есть аккаунт? <Link href="/login">Войти</Link></p>
     </PublicShell>
@@ -161,19 +159,26 @@ export function LoginPage() {
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [done, setDone] = useState(false);
+  const [error, setError] = useState("");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await authApi.forgotPassword(email);
-    setDone(true);
+    setError("");
+    try {
+      await authApi.forgotPassword(email);
+      setDone(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось отправить письмо");
+    }
   }
 
   return (
     <PublicShell actionText="Вспомнили пароль?" actionLabel="Войти" actionHref="/login">
       <h2>Восстановление пароля</h2>
-      {done ? <p className="notice">Если аккаунт существует, письмо с инструкциями будет отправлено.</p> : null}
+      {done ? <p className="notice">Если аккаунт существует, письмо с кодом отправлено. <Link href="/reset-password">Ввести код</Link></p> : null}
       <form onSubmit={submit} className="form-stack">
         <label>Email<input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required /></label>
+        {error ? <p className="field-error">{error}</p> : null}
         <button type="submit">Отправить инструкцию</button>
       </form>
     </PublicShell>
@@ -184,20 +189,27 @@ export function ResetPasswordPage() {
   const [token, setToken] = useState("");
   const [password, setPassword] = useState("");
   const [done, setDone] = useState(false);
+  const [error, setError] = useState("");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await authApi.resetPassword(token, password);
-    setDone(true);
+    setError("");
+    try {
+      await authApi.resetPassword(token, password);
+      setDone(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось сменить пароль");
+    }
   }
 
   return (
     <PublicShell actionText="Вернуться ко входу" actionLabel="Войти" actionHref="/login">
       <h2>Новый пароль</h2>
-      {done ? <p className="notice">Reset flow принят. Production-реализация одноразовых токенов запланирована в identity-service.</p> : null}
+      {done ? <p className="notice">Пароль изменён. <Link href="/login">Войти</Link></p> : null}
       <form onSubmit={submit} className="form-stack">
         <label>Токен<input value={token} onChange={(event) => setToken(event.target.value)} required /></label>
         <label>Новый пароль<input value={password} onChange={(event) => setPassword(event.target.value)} type="password" minLength={8} required /></label>
+        {error ? <p className="field-error">{error}</p> : null}
         <button type="submit">Сохранить пароль</button>
       </form>
     </PublicShell>

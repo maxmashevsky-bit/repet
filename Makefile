@@ -19,7 +19,8 @@ vet:
 	cd $(GO_SERVICE) && go vet ./...
 
 lint: vet
-	cd $(GO_SERVICE) && gofmt -w $$(find . -name '*.go')
+	cd $(GO_SERVICE) && test -z "$$(gofmt -l $$(find . -name '*.go'))"
+	cd apps/web && $(PNPM) lint
 
 migrate:
 	cd $(GO_SERVICE) && go run ./cmd/api -migrate-only

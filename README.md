@@ -1,54 +1,58 @@
 # Репет
 
-«Репет» — ролевая образовательная платформа для ученика и преподавателя. Текущая версия реализует V2 product shell и совместимый Go API, который постепенно мигрируется из compatibility core в page-BFF и domain services по strangler pattern.
+«Репет» — приложение для занятий преподавателя и ученика. Рабочий API находится в `services/core` (Go/PostgreSQL), интерфейс — в `apps/web` (Next.js). Каталоги BFF и domain services описывают целевые границы миграции и пока не запускаются как отдельные сервисы.
 
-## Реализованный вертикальный срез
+## Запуск
 
-- регистрация и вход с выбором роли;
-- server-owned роль через session cookie;
-- разные главные экраны ученика и преподавателя;
-- сообщения с сохранением через API;
-- календарь `/calendar?view=day|week|month`;
-- задания ученика и центр заданий преподавателя;
-- уведомления, профиль и настройки;
-- PostgreSQL migrations;
-- request ID, security headers, CORS allowlist, structured logs, health/readiness/metrics.
+Требуются Docker и Docker Compose. В корне репозитория:
 
-## Быстрый запуск
+```sh
+git clone git@github.com:maxmashevsky-bit/repet.git
+cd repet
+docker compose up --build
+```
+
+Откройте http://127.0.0.1:3000/register. API автоматически применяет миграции к пустой базе. Письма с кодом восстановления пароля доступны в Mailpit: http://127.0.0.1:8025.
+
+Compose слушает только loopback. Если стандартные порты заняты, можно задать `POSTGRES_PORT`, `API_PORT`, `WEB_PORT`, `SMTP_PORT` и `MAILPIT_PORT` перед командой. Остановка: `docker compose down` (данные PostgreSQL сохраняются в volume).
+
+Для локальной разработки без контейнеров приложения нужны Go 1.25+, Node.js 22+ и pnpm 11.19.0:
 
 ```sh
 cp .env.example .env
-docker compose -p repet up -d postgres valkey mailpit
-make migrate
+docker compose up -d postgres mailpit
+(cd apps/web && pnpm install --frozen-lockfile --ignore-scripts)
+set -a; . ./.env; set +a
 make api
 ```
 
-В другом терминале:
+В другом терминале запустите `make web`. Next.js направляет `/api/v1/*` в Go API через `API_INTERNAL_URL`; по умолчанию это `http://127.0.0.1:8080`.
 
-```sh
-PATH=/Users/maksimmasevskij/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:/Users/maksimmasevskij/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin:$PATH make web
-```
+## Основной сценарий
 
-Откройте [http://127.0.0.1:3000/register](http://127.0.0.1:3000/register).
-
-Флаг `-p repet` нужен, потому что Docker Compose не принимает имя проекта, автоматически полученное из кириллического имени папки.
-
-## Структура
-
-- `apps/web` — Next.js App Router, feature slices.
-- `apps/api-gateway` — целевая граница gateway.
-- `apps/bff/*` — целевые page-BFF границы.
-- `services/core` — совместимый Go API для текущего runnable slice.
-- `services/*` — целевые владельцы доменных данных.
-- `packages/contracts` — OpenAPI/AsyncAPI контракты.
-- `design` — локальные PNG-референсы, не runtime assets.
-- `docs` — архитектура, security, runbooks и ADR.
+1. Зарегистрируйтесь как преподаватель. На главной создайте приглашение по email ученика и передайте полученную ссылку.
+2. Ученик регистрируется с тем же email, открывает ссылку и принимает приглашение.
+3. Преподаватель создаёт занятие в календаре и задание в разделе «Задания». Ученик видит их, отправляет ответ, преподаватель выставляет баллы и комментарий.
+4. Обе стороны видят уведомления и могут писать в созданном диалоге.
 
 ## Проверки
 
+Для этих команд нужны Go 1.25+, Node.js 22+, pnpm 11.19.0 и установленные зависимости `apps/web`.
+
 ```sh
+(cd apps/web && pnpm install --frozen-lockfile --ignore-scripts)
 make test
-make vet
+make lint
 make race
-cd apps/web && pnpm typecheck && pnpm exec next build
+make typecheck
+make web-build
 ```
+
+Интеграционный тест с реальной PostgreSQL запускается при заданном `TEST_DATABASE_URL`:
+
+```sh
+cd services/core
+TEST_DATABASE_URL='postgres://tutor:tutor@127.0.0.1:5432/tutor_platform?sslmode=disable' go test ./internal/store -run TestProductFlowPostgres -count=1
+```
+
+Контракт текущего API: `packages/contracts/openapi/core-compatibility.yaml`. Настройки развития архитектуры находятся в `docs/`.

@@ -11,12 +11,19 @@ export function NotificationsPopover({ unread }: { unread: number }) {
   const { dashboard, refresh } = useWorkspace();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function markAll() {
     setLoading(true);
-    await productApi.markAllNotificationsRead();
-    await refresh();
-    setLoading(false);
+    setError("");
+    try {
+      await productApi.markAllNotificationsRead();
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось обновить уведомления");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -33,16 +40,17 @@ export function NotificationsPopover({ unread }: { unread: number }) {
               Отметить все
             </button>
           </header>
+          {error ? <p className="field-error">{error}</p> : null}
           {dashboard.notifications.length === 0 ? (
             <p className="empty">Пока нет уведомлений.</p>
           ) : (
             <ul className="stack-list">
               {dashboard.notifications.map((item) => (
                 <li key={item.id} className={item.read_at ? "" : "unread"}>
-                  <Link href={item.href} onClick={() => setOpen(false)}>
+                  <Link href={item.href} onClick={() => { setOpen(false); if (!item.read_at) void productApi.markNotificationRead(item.id).then(refresh).catch((err: unknown) => setError(err instanceof Error ? err.message : "Не удалось обновить уведомление")); }}>
                     <strong>{item.title}</strong>
                     <span>{item.body}</span>
-                    <small>{formatDateTime(item.created_at)}</small>
+                    <small>{formatDateTime(item.created_at, dashboard.user.timezone)}</small>
                   </Link>
                 </li>
               ))}

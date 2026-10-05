@@ -9,7 +9,6 @@ type Conversation struct {
 	StudentID   string    `json:"student_id"`
 	StudentName string    `json:"student_name"`
 	LastMessage string    `json:"last_message"`
-	UnreadCount int       `json:"unread_count"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 

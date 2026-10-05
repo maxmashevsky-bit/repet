@@ -7,12 +7,26 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func Migrate(ctx context.Context, db *pgxpool.Pool, dir string) error {
-	if _, err := db.Exec(ctx, `create table if not exists schema_migrations (version text primary key, applied_at timestamptz not null default now())`); err != nil {
+	conn, err := db.Acquire(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Release()
+	if _, err := conn.Exec(ctx, `select pg_advisory_lock(82374101)`); err != nil {
+		return err
+	}
+	defer func() {
+		unlockCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_, _ = conn.Exec(unlockCtx, `select pg_advisory_unlock(82374101)`)
+	}()
+	if _, err := conn.Exec(ctx, `create table if not exists schema_migrations (version text primary key, applied_at timestamptz not null default now())`); err != nil {
 		return err
 	}
 	entries, err := os.ReadDir(dir)
@@ -29,7 +43,7 @@ func Migrate(ctx context.Context, db *pgxpool.Pool, dir string) error {
 	for _, file := range files {
 		version := strings.TrimSuffix(file, ".up.sql")
 		var exists bool
-		if err := db.QueryRow(ctx, `select exists(select 1 from schema_migrations where version=$1)`, version).Scan(&exists); err != nil {
+		if err := conn.QueryRow(ctx, `select exists(select 1 from schema_migrations where version=$1)`, version).Scan(&exists); err != nil {
 			return err
 		}
 		if exists {
@@ -39,7 +53,7 @@ func Migrate(ctx context.Context, db *pgxpool.Pool, dir string) error {
 		if err != nil {
 			return err
 		}
-		tx, err := db.Begin(ctx)
+		tx, err := conn.Begin(ctx)
 		if err != nil {
 			return err
 		}

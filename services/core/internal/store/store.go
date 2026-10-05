@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -58,11 +59,11 @@ func (s *Store) EnsureUser(ctx context.Context, p auth.Principal) (domain.User, 
 
 func (s *Store) GetUser(ctx context.Context, userID string) (domain.User, error) {
 	row := s.db.QueryRow(ctx, `
-		select id::text, organization_id::text, email, display_name, role, created_at
+		select id::text, organization_id::text, email, display_name, role, timezone, locale, created_at
 		from users where id=$1
 	`, userID)
 	var u domain.User
-	if err := row.Scan(&u.ID, &u.OrganizationID, &u.Email, &u.DisplayName, &u.Role, &u.CreatedAt); err != nil {
+	if err := row.Scan(&u.ID, &u.OrganizationID, &u.Email, &u.DisplayName, &u.Role, &u.Timezone, &u.Locale, &u.CreatedAt); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.User{}, apperr.ErrNotFound
 		}
@@ -76,7 +77,7 @@ func (s *Store) CreateInvitation(ctx context.Context, actor domain.User, student
 		return domain.Invitation{}, "", apperr.ErrForbidden
 	}
 	studentEmail = strings.ToLower(strings.TrimSpace(studentEmail))
-	if studentEmail == "" || !strings.Contains(studentEmail, "@") {
+	if !validEmail(studentEmail) || len(studentName) > 120 {
 		return domain.Invitation{}, "", apperr.ErrBadRequest
 	}
 	id, err := platform.NewUUID()
@@ -103,13 +104,16 @@ func (s *Store) CreateInvitation(ctx context.Context, actor domain.User, student
 	if err != nil {
 		return domain.Invitation{}, "", err
 	}
-	_ = s.Audit(ctx, actor, "invitation.created", "invitation", inv.ID, map[string]any{"student_email": inv.StudentEmail})
+	s.recordAudit(ctx, actor, "invitation.created", "invitation", inv.ID, map[string]any{"student_email": inv.StudentEmail})
 	return inv, token, nil
 }
 
 func (s *Store) AcceptInvitation(ctx context.Context, actor domain.User, token string) (domain.Relation, error) {
 	if actor.Role != domain.RoleStudent {
 		return domain.Relation{}, apperr.ErrForbidden
+	}
+	if len(token) < 32 || len(token) > 128 {
+		return domain.Relation{}, apperr.ErrBadRequest
 	}
 	hash := platform.TokenHash(token)
 	tx, err := s.db.Begin(ctx)
@@ -118,21 +122,21 @@ func (s *Store) AcceptInvitation(ctx context.Context, actor domain.User, token s
 	}
 	defer tx.Rollback(ctx)
 
-	var invitationID, orgID, tutorID, status string
+	var invitationID, orgID, tutorID, studentEmail, status string
 	var expiresAt time.Time
 	err = tx.QueryRow(ctx, `
-		select id::text, organization_id::text, tutor_id::text, status, expires_at
+		select id::text, organization_id::text, tutor_id::text, student_email, status, expires_at
 		from invitations
 		where token_hash=$1
 		for update
-	`, hash).Scan(&invitationID, &orgID, &tutorID, &status, &expiresAt)
+	`, hash).Scan(&invitationID, &orgID, &tutorID, &studentEmail, &status, &expiresAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.Relation{}, apperr.ErrNotFound
 		}
 		return domain.Relation{}, err
 	}
-	if orgID != actor.OrganizationID {
+	if orgID != actor.OrganizationID || !strings.EqualFold(studentEmail, actor.Email) {
 		return domain.Relation{}, apperr.ErrForbidden
 	}
 	if status != "pending" || time.Now().UTC().After(expiresAt) {
@@ -159,10 +163,21 @@ func (s *Store) AcceptInvitation(ctx context.Context, actor domain.User, token s
 	`, actor.ID, invitationID); err != nil {
 		return domain.Relation{}, err
 	}
+	conversationID, err := platform.NewUUID()
+	if err != nil {
+		return domain.Relation{}, err
+	}
+	if _, err := tx.Exec(ctx, `
+		insert into conversations (id, organization_id, relation_id, tutor_id, student_id)
+		values ($1, $2, $3, $4, $5)
+		on conflict (organization_id, tutor_id, student_id) do nothing
+	`, conversationID, actor.OrganizationID, rel.ID, tutorID, actor.ID); err != nil {
+		return domain.Relation{}, err
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return domain.Relation{}, err
 	}
-	_ = s.Audit(ctx, actor, "invitation.accepted", "relation", rel.ID, map[string]any{"invitation_id": invitationID})
+	s.recordAudit(ctx, actor, "invitation.accepted", "relation", rel.ID, map[string]any{"invitation_id": invitationID})
 	return rel, nil
 }
 
@@ -191,7 +206,7 @@ func (s *Store) ListRelations(ctx context.Context, actor domain.User) ([]domain.
 
 func (s *Store) CreateLesson(ctx context.Context, actor domain.User, relationID, title string, startsAt, endsAt time.Time) (domain.Lesson, error) {
 	title = strings.TrimSpace(title)
-	if relationID == "" || title == "" || !endsAt.After(startsAt) {
+	if !platform.ValidUUID(relationID) || title == "" || len(title) > 180 || startsAt.IsZero() || !endsAt.After(startsAt) {
 		return domain.Lesson{}, apperr.ErrBadRequest
 	}
 	rel, err := s.GetRelationForActor(ctx, actor, relationID)
@@ -221,7 +236,12 @@ func (s *Store) CreateLesson(ctx context.Context, actor domain.User, relationID,
 		EndsAt:     endsAt,
 		Status:     "scheduled",
 	}
-	err = s.db.QueryRow(ctx, `
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return domain.Lesson{}, err
+	}
+	defer tx.Rollback(ctx)
+	err = tx.QueryRow(ctx, `
 		insert into lessons (id, organization_id, relation_id, tutor_id, student_id, title, starts_at, ends_at, status, created_by)
 		values ($1, $2, $3, $4, $5, $6, $7, $8, 'scheduled', $9)
 		returning created_at
@@ -229,17 +249,32 @@ func (s *Store) CreateLesson(ctx context.Context, actor domain.User, relationID,
 	if err != nil {
 		return domain.Lesson{}, err
 	}
-	_ = s.Audit(ctx, actor, "lesson.created", "lesson", lesson.ID, map[string]any{"relation_id": lesson.RelationID})
+	if err := insertNotification(ctx, tx, actor.OrganizationID, lesson.StudentID, "Новое занятие", lesson.Title, "/calendar?date="+lesson.StartsAt.Format("2006-01-02"), "lesson:"+lesson.ID+":created"); err != nil {
+		return domain.Lesson{}, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return domain.Lesson{}, err
+	}
+	s.recordAudit(ctx, actor, "lesson.created", "lesson", lesson.ID, map[string]any{"relation_id": lesson.RelationID})
 	return lesson, nil
 }
 
 func (s *Store) ListLessons(ctx context.Context, actor domain.User) ([]domain.Lesson, error) {
+	return s.ListLessonsPage(ctx, actor, 0)
+}
+
+func (s *Store) ListLessonsPage(ctx context.Context, actor domain.User, offset int) ([]domain.Lesson, error) {
+	if offset < 0 || offset > 100000 {
+		return nil, apperr.ErrBadRequest
+	}
 	rows, err := s.db.Query(ctx, `
 		select id::text, relation_id::text, tutor_id::text, student_id::text, title, starts_at, ends_at, status, created_at
 		from lessons
 		where organization_id=$1 and ($2='admin' or tutor_id=$3 or student_id=$3)
-		order by starts_at desc
-	`, actor.OrganizationID, string(actor.Role), actor.ID)
+		order by starts_at desc, id desc
+		limit 100
+		offset $4
+	`, actor.OrganizationID, string(actor.Role), actor.ID, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -256,6 +291,9 @@ func (s *Store) ListLessons(ctx context.Context, actor domain.User) ([]domain.Le
 }
 
 func (s *Store) GetLessonForActor(ctx context.Context, actor domain.User, lessonID string) (domain.Lesson, error) {
+	if !platform.ValidUUID(lessonID) {
+		return domain.Lesson{}, apperr.ErrBadRequest
+	}
 	row := s.db.QueryRow(ctx, `
 		select id::text, relation_id::text, tutor_id::text, student_id::text, title, starts_at, ends_at, status, created_at
 		from lessons
@@ -272,6 +310,9 @@ func (s *Store) GetLessonForActor(ctx context.Context, actor domain.User, lesson
 }
 
 func (s *Store) GetRelationForActor(ctx context.Context, actor domain.User, relationID string) (domain.Relation, error) {
+	if !platform.ValidUUID(relationID) {
+		return domain.Relation{}, apperr.ErrBadRequest
+	}
 	row := s.db.QueryRow(ctx, `
 		select id::text, tutor_id::text, student_id::text, status, created_at
 		from relations
@@ -304,6 +345,12 @@ func (s *Store) Audit(ctx context.Context, actor domain.User, action, resourceTy
 		values ($1, $2, $3, $4, $5, $6, $7)
 	`, id, actor.OrganizationID, actor.ID, action, resourceType, nullableUUID(resourceID), data)
 	return err
+}
+
+func (s *Store) recordAudit(ctx context.Context, actor domain.User, action, resourceType, resourceID string, metadata map[string]any) {
+	if err := s.Audit(ctx, actor, action, resourceType, resourceID, metadata); err != nil {
+		slog.Error("audit write failed", "action", action, "error", err)
+	}
 }
 
 func nullableUUID(id string) any {
