@@ -1,0 +1,128 @@
+openapi: 3.1.0
+info: {title: Repet reviewed PDF imports, version: 1.0.0}
+security: [{session: []}]
+paths:
+  /api/v1/pdf-imports:
+    get:
+      summary: Tutor-owned import metadata only; text and figures loaded by detail endpoint
+      parameters:
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+        - {name: offset, in: query, schema: {type: integer, minimum: 0, maximum: 100000, default: 0}}
+      responses: {'200': {description: 'items, total, limit, offset'}, '403': {description: Tutor required}}
+    post:
+      summary: Quarantine immutable PDF source and queue bounded extraction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [request_id, filename, data_base64, rights_status, license, source_label]
+              properties:
+                request_id: {type: string, format: uuid}
+                filename: {type: string, maxLength: 200, pattern: '\.[pP][dD][fF]$'}
+                data_base64: {type: string, contentEncoding: base64, description: 'At most 5 MiB decoded; PDF header and isolated parsing required'}
+                rights_status: {enum: [own, permission, open_license]}
+                license: {type: string, minLength: 1, maxLength: 1000}
+                source_label: {type: string, minLength: 1, maxLength: 1000}
+      responses:
+        '202': {description: 'Import metadata and ID; same request_id/content replays the original import'}
+        '400': {description: Invalid body, filename or size}
+        '409': {description: Nonce content conflict}
+        '422': {description: Imports disabled or author quota exhausted}
+  /api/v1/pdf-imports/{pdfID}:
+    parameters: [{$ref: '#/components/parameters/PDFID'}]
+    get:
+      summary: Owner-only processing state and immutable extraction plus separate corrections
+      responses: {'200': {description: 'status queued/extracting/needs_review/ocr_required/failed; pages, assets, warnings, lesson_ids'}, '404': {description: Unavailable import}}
+  /api/v1/pdf-imports/{pdfID}/source:
+    parameters: [{$ref: '#/components/parameters/PDFID'}]
+    get:
+      summary: Owner-only original attachment; never inline PDF
+      responses:
+        '200': {description: Exact original bytes, content: {application/octet-stream: {schema: {type: string, format: binary}}}}
+        '404': {description: Unavailable source}
+  /api/v1/pdf-imports/{pdfID}/pages/{page}:
+    parameters:
+      - {$ref: '#/components/parameters/PDFID'}
+      - {name: page, in: path, required: true, schema: {type: integer, minimum: 1, maximum: 10}}
+    put:
+      summary: Author confirms corrected page text; resets associated draft approvals
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [text]
+              properties: {text: {type: string, maxLength: 100000, description: Nonblank transcription required for pages without text layer}}
+      responses: {'200': {description: Updated import; original text unchanged}, '400': {description: Invalid or missing transcription}}
+  /api/v1/pdf-imports/{pdfID}/figures:
+    parameters: [{$ref: '#/components/parameters/PDFID'}]
+    post:
+      summary: Author crops an explicitly selected page region into immutable PNG
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [page_number, x, y, width, height]
+              properties:
+                page_number: {type: integer, minimum: 1, maximum: 10}
+                x: {type: integer, minimum: 0, maximum: 3000}
+                y: {type: integer, minimum: 0, maximum: 3000}
+                width: {type: integer, minimum: 1, maximum: 3000}
+                height: {type: integer, minimum: 1, maximum: 3000}
+      responses: {'201': {description: Updated import with derived figure}, '400': {description: Region outside actual page bounds}, '422': {description: Storage or figure quota exhausted}}
+  /api/v1/pdf-imports/{pdfID}/lessons:
+    parameters: [{$ref: '#/components/parameters/PDFID'}]
+    post:
+      summary: Create native draft and immutable source provenance, never publish
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [course_id, lesson]
+              properties:
+                course_id: {type: string, format: uuid}
+                lesson: {$ref: './learning-catalog.yaml#/components/schemas/LessonInput'}
+      responses: {'201': {description: Native learning lesson draft}, '422': {description: Extraction incomplete or failed}}
+  /api/v1/pdf-assets/{assetID}:
+    parameters: [{name: assetID, in: path, required: true, schema: {type: string, format: uuid}}]
+    get:
+      summary: Authenticated normalized PNG with per-resource ACL; no student source pages
+      responses:
+        '200': {description: Private no-store PNG, content: {image/png: {schema: {type: string, format: binary}}}}
+        '404': {description: Not owned or not referenced by accessible publication, pinned run or selected assigned exercise}
+  /api/v1/catalog/lessons/{lessonID}/pdf-source:
+    parameters: [{$ref: '#/components/parameters/LessonID'}]
+    get:
+      summary: Native lesson author gets source, current draft revision and review flag
+      responses: {'200': {description: 'source, revision, reviewed'}, '404': {description: No owned PDF provenance}}
+  /api/v1/catalog/lessons/{lessonID}/pdf-review:
+    parameters: [{$ref: '#/components/parameters/LessonID'}]
+    post:
+      summary: Author attests current saved revision; this does not publish
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [revision, confirmed]
+              properties: {revision: {type: integer, minimum: 1}, confirmed: {const: true}}
+      responses: {'200': {description: Approved revision and source}, '422': {description: Stale revision, unreviewed page or no exercises}}
+components:
+  securitySchemes:
+    session: {type: apiKey, in: cookie, name: repet_session}
+  parameters:
+    PDFID: {name: pdfID, in: path, required: true, schema: {type: string, format: uuid}}
+    LessonID: {name: lessonID, in: path, required: true, schema: {type: string, format: uuid}}

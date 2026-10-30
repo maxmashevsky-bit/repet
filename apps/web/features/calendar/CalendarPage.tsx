@@ -1,12 +1,16 @@
 "use client";
+import { Select } from "../ui/Select";
 
+
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect,useRef,useState,type CSSProperties } from "react";
 import { productApi } from "../../shared/api/client";
 import type { Lesson } from "../../shared/api/types";
 import { dateInTimeZone, formatDateTime, formatTime, timeInTimeZone, todayISO } from "../../shared/lib/date";
 import { useWorkspace } from "../app-shell/AppShell";
 import { Icon } from "../ui/Icon";
+import { calendarPositions } from "./layout";
 
 type ViewMode = "day" | "week" | "month";
 const modes: ViewMode[] = ["day", "week", "month"];
@@ -31,6 +35,8 @@ export function CalendarPage() {
   const [endsAt, setEndsAt] = useState("");
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<Lesson | null>(null);
+  const scroll=useRef<HTMLDivElement>(null);
+  useEffect(()=>{if(view!=="month"&&scroll.current)scroll.current.scrollTop=8*56;},[view,requestedDate]);
   const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
   const gridStart = new Date(firstDay);
   gridStart.setDate(firstDay.getDate() - (firstDay.getDay() + 6) % 7);
@@ -51,6 +57,10 @@ export function CalendarPage() {
     return view === "day" ? lessonDate === dateKey(date) : view === "week" ? weekDays.some((item) => dateKey(item) === lessonDate) : lessonDate.slice(0, 7) === dateKey(date).slice(0, 7);
   });
   const titleDate = new Intl.DateTimeFormat("ru-RU", view === "day" ? { day: "numeric", month: "long", year: "numeric" } : { month: "long", year: "numeric" }).format(date);
+  const positions = calendarPositions(visibleLessons.map(lesson => {
+    const start = timeInTimeZone(lesson.starts_at, dashboard.user.timezone);
+    return { id: lesson.id, day: dateInTimeZone(lesson.starts_at, dashboard.user.timezone), start: start.hour * 60 + start.minute, duration: Math.max(0, (Date.parse(lesson.ends_at) - Date.parse(lesson.starts_at)) / 60000) };
+  }));
   const weekTitle = `${new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short" }).format(weekDays[0])} – ${new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", year: "numeric" }).format(weekDays[6])}`;
 
   function navigate(nextDate: Date, nextView = view) {
@@ -80,11 +90,11 @@ export function CalendarPage() {
 
   return (
     <section className="calendar-layout">
-      <div className="page-title full"><h1>Календарь</h1><p>Занятия и важные даты.</p></div>
+      <div className="page-title full page-title-action"><div><h1>Календарь</h1><p>Занятия и важные даты.</p></div>{dashboard.user.role === "tutor" ? <Link className="button secondary" href="/calendar/planner"><Icon name="chart" size={20} />Рабочий план</Link> : null}</div>
       <aside className="panel calendar-side">
         {dashboard.user.role === "tutor" ? <button className="terracotta add-event" type="button" onClick={() => setShowForm((value) => !value)}><Icon name="plus" />Добавить занятие</button> : null}
         {showForm ? <form className="form-stack" onSubmit={create}>
-          <label>Ученик<select value={relationID} onChange={(event) => setRelationID(event.target.value)} required>{dashboard.relations.map((relation) => <option key={relation.id} value={relation.id}>{dashboard.conversations.find((item) => item.student_id === relation.student_id)?.student_name ?? relation.student_id}</option>)}</select></label>
+          <label>Ученик<Select value={relationID} onChange={(event) => setRelationID(event.target.value)} required>{dashboard.relations.map((relation) => <option key={relation.id} value={relation.id}>{dashboard.conversations.find((item) => item.student_id === relation.student_id)?.student_name ?? relation.student_id}</option>)}</Select></label>
           <label>Тема<input value={title} onChange={(event) => setTitle(event.target.value)} required /></label>
           <label>Начало (время устройства)<input type="datetime-local" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} required /></label>
           <label>Конец (время устройства)<input type="datetime-local" value={endsAt} onChange={(event) => setEndsAt(event.target.value)} required /></label>
@@ -101,17 +111,23 @@ export function CalendarPage() {
           <div className="segmented">{modes.map((mode) => <button key={mode} type="button" className={view === mode ? "active" : ""} onClick={() => navigate(date, mode)}>{modeLabel(mode)}</button>)}</div>
         </div>
         {view === "month" ? <div className="month-grid">{monthDays.map((day) => <div key={dateKey(day)} className="month-cell"><strong>{day.getDate()}</strong>{visibleLessons.filter((lesson) => dateInTimeZone(lesson.starts_at, dashboard.user.timezone) === dateKey(day)).map((lesson) => <button className="event-pill" type="button" key={lesson.id} onClick={() => setSelected(lesson)}>{formatTime(lesson.starts_at, dashboard.user.timezone)} {lesson.title}</button>)}</div>)}</div> :
-          <div className={view === "week" ? "time-grid week" : "time-grid"}>
-            {view === "week" ? <div className="week-header">{weekDays.map((day, index) => <strong key={dateKey(day)}>{weekdays[index]} {day.getDate()}</strong>)}</div> : null}
-            {Array.from({ length: 24 }, (_, index) => index).map((hour) => <span key={hour} className="hour">{hour}:00</span>)}
+          <div className="calendar-scroll" ref={scroll}><div className={view === "week" ? "time-grid week" : "time-grid"} style={{"--calendar-days":view==="week"?7:1} as CSSProperties}>
+            {view === "week" ? <div className="week-header"><span className="week-timezone">Время</span>{weekDays.map((day, index) => <button type="button" className={dateKey(day)===todayISO(dashboard.user.timezone)?"calendar-week-day is-today":"calendar-week-day"} key={dateKey(day)} onClick={()=>navigate(day,"day")} aria-label={new Intl.DateTimeFormat("ru-RU",{dateStyle:"full"}).format(day)}><span>{weekdays[index]}</span><strong>{day.getDate()}</strong></button>)}</div> : null}
+            {Array.from({ length: 24 }, (_, hour) => <div key={hour} className="calendar-hour-row"><span className="hour">{String(hour).padStart(2,"0")}:00</span>{Array.from({length:view==="week"?7:1},(_,column)=><span key={column} className="calendar-hour-cell" aria-hidden="true"/>)}</div>)}
             {visibleLessons.map((lesson, index) => {
               const lessonDate = new Date(`${dateInTimeZone(lesson.starts_at, dashboard.user.timezone)}T12:00:00`);
               const dayIndex = (lessonDate.getDay() + 6) % 7;
               const start = timeInTimeZone(lesson.starts_at, dashboard.user.timezone);
               const top = (view === "week" ? 62 : 0) + start.hour * 56 + Math.round(start.minute / 60 * 56);
-              return <button key={lesson.id} className={`calendar-event tone-${index % 4}`} style={view === "week" ? { top, left: `calc(72px + ${dayIndex * (100 / 7)}% - ${dayIndex * (72 / 7)}px)`, width: "calc(14.285% - 14px)" } : { top }} type="button" onClick={() => setSelected(lesson)}><strong>{formatTime(lesson.starts_at, dashboard.user.timezone)} - {formatTime(lesson.ends_at, dashboard.user.timezone)}</strong><span>{lesson.title}</span></button>;
+              const position = positions.get(lesson.id) ?? { lane: 0, lanes: 1, height: 48 };
+              const columns = view === "week" ? 7 : 1, column = view === "week" ? dayIndex : 0;
+              return <button key={lesson.id} className={`calendar-event tone-${index % 4}`} title={`${formatDateTime(lesson.starts_at, dashboard.user.timezone)} · ${lesson.title}`} style={{
+                top, height: position.height,
+                left: `calc(72px + (100% - 72px) * ${(column + position.lane / position.lanes) / columns} + 4px)`,
+                width: `calc((100% - 72px) / ${columns * position.lanes} - 8px)`
+              }} type="button" onClick={() => setSelected(lesson)}><strong>{formatTime(lesson.starts_at, dashboard.user.timezone)} - {formatTime(lesson.ends_at, dashboard.user.timezone)}</strong><span>{lesson.title}</span></button>;
             })}
-          </div>}
+          </div></div>}
         {selected ? <div className="notice"><strong>{selected.title}</strong><p>{formatDateTime(selected.starts_at, dashboard.user.timezone)} – {formatDateTime(selected.ends_at, dashboard.user.timezone)}</p><button type="button" className="secondary" onClick={() => setSelected(null)}>Закрыть</button></div> : null}
         {visibleLessons.length === 0 ? <p className="empty">В этом периоде занятий нет.</p> : null}
       </section>

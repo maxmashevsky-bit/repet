@@ -1,0 +1,107 @@
+openapi: 3.1.0
+info: {title: Repet private chat attachments, version: 1.0.0}
+servers: [{url: /api/v1}]
+security: [{session: []}]
+paths:
+  /messages/conversations/{conversationID}/files:
+    parameters: [{$ref: '#/components/parameters/Conversation'}]
+    post:
+      summary: Upload reconstructed PNG/JPEG or UTF-8 text to an active private conversation
+      description: 4 MiB source/canonical limit, 4M pixels, 50 MiB and 100 files per owner. Pending files expire after24h. Only uploader can download until sent. Not a general antivirus or PDF upload.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [filename, data, request_id]
+              properties:
+                filename: {type: string, minLength: 1, maxLength: 120}
+                data: {type: string, contentEncoding: base64}
+                request_id: {type: string, format: uuid}
+      responses:
+        '201': {description: Stored canonical file or identical replay, content: {application/json: {schema: {$ref: '#/components/schemas/File'}}}}
+        '400': {description: Invalid content, extension or size}
+        '401': {description: No session}
+        '404': {description: Not an active participant}
+        '409': {description: Upload nonce reused with a different source or name}
+        '422': {description: Quota reached or storage unavailable}
+  /messages/conversations/{conversationID}/files/{fileID}:
+    parameters:
+      - {$ref: '#/components/parameters/Conversation'}
+      - {name: fileID, in: path, required: true, schema: {type: string, format: uuid}}
+    get:
+      summary: Authenticated attachment download; never a public object key or URL
+      responses:
+        '200':
+          description: Canonical bytes, attachment disposition, no-store, nosniff and sandbox CSP
+          content:
+            image/png: {schema: {type: string, format: binary}}
+            image/jpeg: {schema: {type: string, format: binary}}
+            text/plain: {schema: {type: string}}
+        '401': {description: No session}
+        '404': {description: Unavailable file or conversation}
+    delete:
+      summary: Uploader may remove an unsent file; attached files are immutable
+      responses:
+        '200': {description: Private object and pending metadata deleted}
+        '401': {description: No session}
+        '404': {description: Foreign, absent or already attached file}
+  /messages/conversations/{conversationID}/references:
+    parameters: [{$ref: '#/components/parameters/Conversation'}]
+    get:
+      parameters:
+        - {name: kind, in: query, required: true, schema: {type: string, enum: [assignment, lesson]}}
+        - {name: q, in: query, schema: {type: string, maxLength: 120}}
+        - {name: offset, in: query, schema: {type: integer, minimum: 0, maximum: 100000}}
+      responses:
+        '200': {description: Up to20 references already accessible to BOTH participants, content: {application/json: {schema: {type: object, properties: {items: {type: array, items: {$ref: '#/components/schemas/Attachment'}}}}}}}
+        '400': {description: Invalid filter}
+        '404': {description: No active conversation access}
+  /messages/conversations/{conversationID}/assignments/{assignmentID}:
+    parameters:
+      - {$ref: '#/components/parameters/Conversation'}
+      - {name: assignmentID, in: path, required: true, schema: {type: string, format: uuid}}
+    get:
+      responses:
+        '200':
+          description: Allowlisted preview; no answers, feedback or closed answer keys
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, title, body, kind, status, due_at]
+                properties:
+                  id: {type: string, format: uuid}
+                  title: {type: string}
+                  body: {type: string}
+                  kind: {type: string, enum: [text, material]}
+                  status: {type: string}
+                  due_at: {type: string, format: date-time}
+        '404': {description: Wrong pair, draft, archived or revoked access}
+components:
+  securitySchemes:
+    session: {type: apiKey, in: cookie, name: repet_session}
+  parameters:
+    Conversation: {name: conversationID, in: path, required: true, schema: {type: string, format: uuid}}
+  schemas:
+    File:
+      type: object
+      additionalProperties: false
+      required: [id, filename, content_type, size_bytes]
+      properties:
+        id: {type: string, format: uuid}
+        filename: {type: string, maxLength: 120}
+        content_type: {type: string, enum: ['image/png', 'image/jpeg', 'text/plain; charset=utf-8']}
+        size_bytes: {type: integer, minimum: 1, maximum: 4194304}
+    Attachment:
+      type: object
+      additionalProperties: false
+      required: [kind, available]
+      properties:
+        kind: {type: string, enum: [file, assignment, lesson]}
+        available: {type: boolean, description: False omits ID/title after reference access is revoked}
+        id: {type: string, format: uuid}
+        title: {type: string}
+        file: {$ref: '#/components/schemas/File'}

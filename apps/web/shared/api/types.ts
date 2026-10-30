@@ -9,6 +9,8 @@ export type User = {
   timezone: string;
   locale: string;
   created_at: string;
+  email_verified?: boolean;
+  email_verification_required?: boolean;
 };
 
 export type Relation = {
@@ -38,18 +40,32 @@ export type Conversation = {
   student_id: string;
   student_name: string;
   last_message: string;
+  unread_count?: number;
   created_at: string;
 };
 
 export type Message = {
+  attachment?: ChatAttachment;
   id: string;
   conversation_id: string;
+  sequence?: number;
   author_id: string;
   body: string;
   created_at: string;
 };
 
+export type ChatFile = { id:string;filename:string;content_type:string;size_bytes:number };
+export type ChatAttachment = { kind:"file"|"assignment"|"lesson";id?:string;title?:string;available:boolean;file?:ChatFile };
+export type MessageAttachmentInput = { file_id?:string;assignment_id?:string;lesson_id?:string };
+
 export type Assignment = {
+  html?: {lesson_id:string;version_id:string};
+  kind: "text" | "material";
+  material?: {
+    lesson_id:string; version_id:string; exercise_ids:string[];
+    calendar_lesson_id:string|null; repeat_of:string|null; mode:"practice"|"exam";
+    attempt:import("./learning").LearningAttempt|null;
+  };
   id: string;
   tutor_id: string;
   student_id: string;

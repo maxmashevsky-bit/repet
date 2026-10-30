@@ -1,0 +1,113 @@
+openapi: 3.1.0
+info: {title: Repet exercise bank, version: 1.0.0}
+servers: [{url: /api/v1}]
+security: [{session: []}]
+paths:
+  /exercise-bank:
+    get:
+      summary: Tutor-only licensed published snapshots; no answer keys
+      parameters:
+        - {name: q, in: query, schema: {type: string, maxLength: 200}}
+        - {name: direction, in: query, schema: {enum: [school, olympiad, oge, ege_basic, ege_profile]}}
+        - {name: grade, in: query, schema: {type: integer, minimum: 5, maximum: 11}}
+        - {name: exam_number, in: query, schema: {type: integer, minimum: 1, maximum: 100}}
+        - {name: topic, in: query, schema: {type: string, maxLength: 200}}
+        - {name: subtopic, in: query, schema: {type: string, maxLength: 200}}
+        - {name: difficulty, in: query, schema: {type: integer, minimum: 1, maximum: 5}}
+        - {name: kind, in: query, schema: {enum: [numeric, text, long_text, single_choice, multiple_choice, number_line, grid_select, matching, ordering, geometry]}}
+        - {$ref: '#/components/parameters/Limit'}
+        - {$ref: '#/components/parameters/Offset'}
+      responses: {'200': {description: 'items, total, limit, offset; stable created_at/id order'}, '400': {description: Invalid or repeated query field}, '403': {description: Tutor required}}
+    post:
+      summary: Register own published exercise with immutable metadata and source version
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [lesson_id, exercise_id, grade, direction, topic, source, attribution, rights_status, license]
+              properties:
+                lesson_id: {type: string, format: uuid}
+                exercise_id: {type: string, format: uuid}
+                grade: {type: integer, minimum: 5, maximum: 11}
+                direction: {enum: [school, olympiad, oge, ege_basic, ege_profile]}
+                topic: {type: string, minLength: 1, maxLength: 200}
+                subtopic: {type: string, maxLength: 200}
+                exam_number: {type: [integer, 'null'], minimum: 1, maximum: 100, description: Required for exam directions and null otherwise}
+                source: {type: string, minLength: 1, maxLength: 1000}
+                attribution: {type: string, minLength: 1, maxLength: 1000}
+                rights_status: {enum: [own, permission, open_license]}
+                license: {type: string, minLength: 1, maxLength: 1000}
+      responses: {'201': {description: Immutable bank entry, no private key}, '409': {description: This published exercise is already registered}, '404': {description: Source unavailable or not published}}
+  /exercise-bank/facets:
+    get:
+      summary: Same filters as bank list; accessible topics and subtopics, independent of pagination
+      responses: {'200': {description: 'topics and subtopics arrays; subtopics constrained by selected topic'}, '403': {description: Tutor required}}
+  /exercise-bank/{bankID}:
+    parameters: [{$ref: '#/components/parameters/BankID'}]
+    get:
+      summary: Accessible immutable bank snapshot without key
+      responses: {'200': {description: Metadata and native exercise}, '404': {description: Source inaccessible}, '403': {description: Tutor required}}
+  /exercise-bank/{bankID}/answer-key:
+    parameters: [{$ref: '#/components/parameters/BankID'}]
+    get:
+      summary: Closed tutor-only key for accessible bank source
+      responses: {'200': {description: 'exercise_id, answer, explanation, hints'}, '403': {description: No student access}, '404': {description: Inaccessible source}}
+  /bank-collections:
+    get:
+      parameters: [{$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Offset'}]
+      summary: Owner-only metadata list; full exercises/provenance loaded by detail
+      responses: {'200': {description: 'items, total, limit, offset'}, '403': {description: Tutor required}}
+    post:
+      summary: Create private immutable cross-lesson native snapshot with provenance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [request_id, title, course_id, topic_id, bank_ids]
+              properties:
+                request_id: {type: string, format: uuid}
+                title: {type: string, minLength: 1, maxLength: 200}
+                course_id: {type: string, format: uuid}
+                topic_id: {type: string, format: uuid}
+                bank_ids: {type: array, minItems: 1, maxItems: 100, uniqueItems: true, items: {type: string, format: uuid}}
+      responses: {'201': {description: Pinned native version and provenance; identical nonce replays}, '409': {description: Nonce payload conflict}, '404': {description: Inaccessible source or destination}}
+  /bank-collections/{collectionID}:
+    parameters: [{$ref: '#/components/parameters/CollectionID'}]
+    get:
+      summary: Owner-only immutable version and provenance; no private keys
+      responses: {'200': {description: Collection with native exercises}, '404': {description: Not owned}, '403': {description: Tutor required}}
+  /bank-collections/{collectionID}/assign:
+    parameters: [{$ref: '#/components/parameters/CollectionID'}]
+    post:
+      summary: Idempotent per-student assignment batch; explicit partial failures, safe retry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [request_id, student_ids, due_at, mode]
+              properties:
+                request_id: {type: string, format: uuid}
+                student_ids: {type: array, minItems: 1, maxItems: 50, uniqueItems: true, items: {type: string, format: uuid}}
+                due_at: {type: string, format: date-time}
+                mode: {enum: [practice, exam]}
+      responses:
+        '200': {description: 'Array of student_id + assignment or error; a partial batch is not all-success'}
+        '409': {description: Nonce payload/collection conflict}
+        '404': {description: Collection not owned or an initial student link is unavailable}
+components:
+  securitySchemes:
+    session: {type: apiKey, in: cookie, name: repet_session}
+  parameters:
+    BankID: {name: bankID, in: path, required: true, schema: {type: string, format: uuid}}
+    CollectionID: {name: collectionID, in: path, required: true, schema: {type: string, format: uuid}}
+    Limit: {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+    Offset: {name: offset, in: query, schema: {type: integer, minimum: 0, maximum: 100000, default: 0}}

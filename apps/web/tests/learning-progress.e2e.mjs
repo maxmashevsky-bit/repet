@@ -1,0 +1,60 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { createRequire } from "node:module";
+import { mkdir } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+
+const require=createRequire(import.meta.url);
+const {chromium,request,expect:baseExpect}=require(process.env.REPET_PLAYWRIGHT_MODULE||"playwright/test");
+const expect=baseExpect.configure({timeout:15000});
+const baseURL=process.env.REPET_E2E_URL||"http://127.0.0.1:3005";
+const artifacts=fileURLToPath(new URL("../../../tmp/task05-learning/",import.meta.url));
+test("learning: three answers survive a closed tab, pinned version, hints, history and manual review",{timeout:180000},async(t)=>{
+ await mkdir(artifacts,{recursive:true});
+ const browser=await chromium.launch({headless:true,...(process.env.REPET_CHROME_PATH?{executablePath:process.env.REPET_CHROME_PATH}:{})});
+ const teacher=await request.newContext({baseURL}),student=await request.newContext({baseURL});
+ let page;
+ t.after(async()=>{try{if(page&&!page.isClosed())await page.screenshot({path:artifacts+"final.png",fullPage:true});}finally{await browser.close();await teacher.dispose();await student.dispose();}});
+ async function call(api,method,url,data,status=200){const r=await api.fetch(url,{method,...(data?{data}:{})});assert.equal(r.status(),status,`${url}: ${await r.text()}`);return r.json();}
+ const suffix=crypto.randomUUID();
+ for(const [api,role]of [[teacher,"tutor"],[student,"student"]])await call(api,"POST","/api/v1/auth/register",{email:`${role}-${suffix}@example.test`,display_name:role==="tutor"?"Преподаватель прогресса":"Ученик прогресса",role,password:"LearningTest123!",accept_terms:true},201);
+ const {email}=await call(student,"GET","/api/v1/me");
+ const invite=await call(teacher,"POST","/api/v1/invitations",{student_email:email},201);await call(student,"POST",`/api/v1/invitations/${invite.token}/accept`,{},201);
+ const base="/api/v1/catalog";
+ const c=await call(teacher,"POST",base+"/courses",{title:"Продолжаем учиться",track:"school",grade_min:1,grade_max:11,difficulty:1,visibility:"linked_students"},201);
+ const topic=await call(teacher,"POST",`${base}/courses/${c.id}/topics`,{title:"Сохранение результата",position:0},201);
+ const input={topic_id:topic.id,title:"Пять шагов",content:"Первоначальный текст урока.",track:"school",grade_min:1,grade_max:11,difficulty:1};
+ const lesson=await call(teacher,"POST",`${base}/courses/${c.id}/lessons`,input,201),lp=`${base}/lessons/${lesson.id}`;
+ const exercises=[];
+ for(let i=0;i<5;i++)exercises.push(await call(teacher,"POST",lp+"/exercises",{kind:i===4?"long_text":"numeric",prompt:i===4?"Объясните ход решения.":`Введите ${i+1}.`,difficulty:1,position:i,options:[],answer_key:{answer:String(i+1),explanation:"PRIVATE-ANSWER",hints:i===0?["RepetHint: начни с единицы.","RepetHint: ещё одна подсказка."]:[]}},201));
+ await call(teacher,"POST",`${base}/courses/${c.id}/publish`,{});await call(teacher,"POST",`${base}/topics/${topic.id}/publish`,{});await call(teacher,"POST",lp+"/publish",{});
+ const context=await browser.newContext({storageState:await student.storageState(),viewport:{width:1440,height:1000}});
+ const errors=[],keyRequests=[];function watch(p){p.on("pageerror",e=>errors.push(e.message));p.on("request",r=>{if(r.url().includes("answer-keys"))keyRequests.push(r.url());});}
+ page=await context.newPage();watch(page);const url=`${baseURL}/tasks/library/${lesson.id}`;await page.goto(url);
+ await expect(page.locator(".engine-exercise")).toHaveCount(5);await expect(page.locator("body")).not.toContainText("RepetHint:");
+ const originalRun=await page.locator(".learning-progress").getAttribute("data-learning-id");
+ const solve=async(index,answer,status="Верно")=>{const region=page.locator(".engine-exercise").nth(index);await region.getByRole("textbox").fill(answer);await region.getByRole("button",{name:index===4?"Отправить преподавателю":"Проверить ответ",exact:true}).click();await expect(region.locator(".engine-status")).toHaveText(status);};
+ await solve(0,"9","Неверно");await page.getByRole("button",{name:"Подсказка 0 / 2",exact:true}).click();await expect(page.getByText("RepetHint: начни с единицы.",{exact:false})).toBeVisible();
+ await solve(0,"1");await solve(1,"2");await solve(2,"3");await expect(page.locator(".learning-counts")).toContainText("3 / 5");
+ await expect(page.getByRole("button",{name:"Завершить урок",exact:true})).toBeDisabled();await page.close();
+ // A new publication must not replace the learner's unfinished version.
+ await call(teacher,"PUT",lp,{...input,content:"Новая версия урока."});
+ await call(teacher,"PUT",lp+`/exercises/${exercises[3].id}`,{kind:"numeric",prompt:"Введите 40.",difficulty:1,position:3,options:[],answer_key:{answer:"40"}});
+ await call(teacher,"POST",lp+"/publish",{});
+ page=await context.newPage();watch(page);await page.goto(url);
+ await expect(page.locator(".learning-progress")).toHaveAttribute("data-learning-id",originalRun);
+ await expect(page.locator(".engine-correct")).toHaveCount(3);await expect(page.locator(".material-prose")).toHaveText(input.content);
+ for(let i=0;i<3;i++)await expect(page.locator(".engine-exercise").nth(i).getByRole("textbox")).toHaveValue(String(i+1));
+ await solve(3,"4");await solve(4,"Подробное решение ученика.","Требует проверки преподавателем");
+ await page.getByRole("button",{name:"Завершить урок",exact:true}).click();await expect(page.getByRole("heading",{name:"Урок завершён",exact:true})).toBeVisible();
+ const history=page.locator(".learning-history").first();await expect(history.locator(".learning-history-item")).toHaveCount(6);await expect(history).toContainText("Неверно");await expect(history).toContainText("Подсказок: 1");
+ const attempts=await call(teacher,"GET",lp+"/attempts?limit=100&offset=0");const manual=attempts.items.find(a=>a.kind==="long_text");assert.ok(manual);
+ await call(teacher,"PUT",lp+`/attempts/${manual.id}/review`,{status:"correct",feedback:"Решение принято."});await page.getByRole("button",{name:"Обновить результаты",exact:true}).click();await expect(page.locator(".engine-correct")).toHaveCount(5);
+ await page.screenshot({path:artifacts+"completed-desktop.png",fullPage:true});
+ await page.setViewportSize({width:375,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.screenshot({path:artifacts+"completed-mobile.png",fullPage:true});
+ await page.getByRole("button",{name:"Пройти заново",exact:true}).click();await expect(page.locator(".learning-progress")).not.toHaveAttribute("data-learning-id",originalRun);
+ await expect(page.locator(".learning-counts")).toContainText("0 / 5");await expect(page.locator(".material-prose")).toHaveText("Новая версия урока.");
+ await expect(page.locator(".learning-history").last()).toContainText("Прохождение 1");await expect(page.locator("body")).not.toContainText("PRIVATE-ANSWER");
+ await page.getByRole("button",{name:"История прохождения 1",exact:true}).click();await expect(page.getByRole("region",{name:"Ответы прошлого прохождения"})).toContainText("Подробное решение ученика.");
+ assert.deepEqual(errors,[]);assert.deepEqual(keyRequests,[]);
+});

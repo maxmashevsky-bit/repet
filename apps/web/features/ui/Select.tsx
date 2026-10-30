@@ -1,0 +1,30 @@
+"use client";
+
+import {Children,isValidElement,useEffect,useId,useRef,useState,type ReactNode,type SelectHTMLAttributes} from "react";
+import {createPortal} from "react-dom";
+import {Icon} from "./Icon";
+
+type Choice={value:string;label:string;disabled:boolean;hidden:boolean};
+function text(node:ReactNode):string{if(typeof node==="string"||typeof node==="number")return String(node);if(isValidElement<{children?:ReactNode}>(node))return text(node.props.children);return Children.toArray(node).map(text).join("");}
+function choices(children:ReactNode,disabled=false):Choice[]{const out:Choice[]=[];Children.forEach(children,node=>{if(!isValidElement<{children?:ReactNode;value?:string|number;label?:string;disabled?:boolean;hidden?:boolean}>(node))return;if(node.type==="option")out.push({value:String(node.props.value??text(node.props.children)),label:node.props.label??text(node.props.children),disabled:disabled||Boolean(node.props.disabled),hidden:Boolean(node.props.hidden)});else out.push(...choices(node.props.children,disabled||Boolean(node.props.disabled)));});return out;}
+
+// The real select preserves form validation, FormData and ordinary change events.
+export function Select({children,className="",onChange,onKeyDown,onClick,onBlur,...props}:SelectHTMLAttributes<HTMLSelectElement>){
+ const id=useId(),listID=`select-list-${id}`,native=useRef<HTMLSelectElement>(null),search=useRef({value:"",at:0});
+ const items=choices(children),[open,setOpen]=useState(false),[active,setActive]=useState(-1),[value,setValue]=useState(String(props.value??props.defaultValue??items.find(i=>!i.disabled)?.value??"")),[position,setPosition]=useState({left:0,top:0,width:0,maxHeight:280});
+ const selected=String(props.value??value),[portal,setPortal]=useState<Element|null>(null);
+ function show(){const el=native.current;if(!el||el.matches(":disabled"))return;const rect=el.getBoundingClientRect(),below=innerHeight-rect.bottom-18,above=rect.top-18,up=above>below&&below<240,height=Math.min(320,up?above:below);setPosition({left:Math.max(12,Math.min(rect.left,innerWidth-Math.min(rect.width,innerWidth-24)-12)),top:up?Math.max(12,rect.top-Math.min(height,items.filter(i=>!i.hidden).length*42+12)-6):rect.bottom+6,width:Math.min(rect.width,innerWidth-24),maxHeight:height});setPortal(el.closest("dialog")??document.body);setActive(Math.max(0,items.findIndex(i=>i.value===el.value&&!i.hidden)));setOpen(true);}
+ function choose(index:number){const item=items[index],el=native.current;if(!item||item.disabled||item.hidden||!el)return;el.value=item.value;el.dispatchEvent(new Event("change",{bubbles:true}));setValue(item.value);setOpen(false);el.focus();}
+ function move(direction:number){let next=active;for(let n=0;n<items.length;n++){next=(next+direction+items.length)%items.length;if(!items[next].disabled&&!items[next].hidden){setActive(next);break;}}}
+ useEffect(()=>{if(!open)return;const outside=(e:PointerEvent)=>{const target=e.target as Node;if(!native.current?.parentElement?.contains(target)&&!document.getElementById(listID)?.contains(target))setOpen(false);};const close=()=>setOpen(false);document.addEventListener("pointerdown",outside,true);window.addEventListener("resize",close);const scroll=(e:Event)=>{if(!document.getElementById(listID)?.contains(e.target as Node))close();};window.addEventListener("scroll",scroll,true);return()=>{document.removeEventListener("pointerdown",outside,true);window.removeEventListener("resize",close);window.removeEventListener("scroll",scroll,true);};},[open,listID]);
+ useEffect(()=>{if(open)document.getElementById(`${listID}-${active}`)?.scrollIntoView({block:"nearest"});},[open,active,listID]);
+ return <span className={`modern-select ${props.disabled?"is-disabled":""}`}>
+  <select {...props} ref={native} className={`modern-select-native ${className}`} aria-expanded={open} aria-controls={open?listID:undefined} aria-activedescendant={open&&active>=0?`${listID}-${active}`:undefined} onMouseDown={e=>{if(!e.currentTarget.disabled)e.preventDefault();}} onPointerDown={e=>{if(!e.currentTarget.disabled){e.preventDefault();e.currentTarget.focus();}}} onClick={e=>{e.preventDefault();onClick?.(e);if(open)setOpen(false);else show();}} onBlur={e=>{onBlur?.(e);setOpen(false);}} onChange={e=>{setValue(e.currentTarget.value);setOpen(false);onChange?.(e);}} onKeyDown={e=>{
+   onKeyDown?.(e);if(e.defaultPrevented)return;
+   if(e.key==="Escape"){e.preventDefault();e.stopPropagation();setOpen(false);return;}if(e.key==="Tab"){setOpen(false);return;}
+   if(["ArrowDown","ArrowUp","Home","End","Enter"," "].includes(e.key)){e.preventDefault();if(!open){show();return;}if(e.key==="Enter"||e.key===" ")choose(active);else if(e.key==="Home"||e.key==="End"){const candidates=items.map((item,index)=>({item,index})).filter(v=>!v.item.disabled&&!v.item.hidden);setActive((e.key==="Home"?candidates[0]:candidates.at(-1))?.index??-1);}else move(e.key==="ArrowDown"?1:-1);return;}
+   if(e.key.length===1&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();const now=performance.now(),prefix=(now-search.current.at>700?"":search.current.value)+e.key.toLocaleLowerCase();search.current={value:prefix,at:now};const index=items.findIndex(i=>!i.disabled&&!i.hidden&&i.label.toLocaleLowerCase().startsWith(prefix));if(index>=0){if(open)setActive(index);else choose(index);}}
+  }}>{children}</select><span className="modern-select-arrow"><Icon name="chevron" size={18}/></span>
+  {open&&portal?createPortal(<div id={listID} role="listbox" aria-label={props["aria-label"]??"Варианты"} className="modern-select-menu" style={position}>{items.map((item,index)=>item.hidden?null:<button key={`${index}:${item.value}`} id={`${listID}-${index}`} type="button" role="option" tabIndex={-1} aria-selected={item.value===selected} disabled={item.disabled} className={index===active?"is-active":""} onMouseDown={e=>e.preventDefault()} onPointerDown={e=>e.preventDefault()} onPointerMove={()=>setActive(index)} onClick={()=>choose(index)}><span>{item.label||"Не выбрано"}</span>{item.value===selected?<Icon name="check" size={18}/>:<span className="modern-select-check"/>}</button>)}</div>,portal):null}
+ </span>;
+}

@@ -1,0 +1,155 @@
+openapi: 3.1.0
+info: { title: Repet Learning Progress API, version: 1.0.0 }
+servers: [{ url: /api/v1 }]
+security: [{ session: [] }]
+paths:
+  /catalog/lessons/{learningLessonID}/learning-attempts:
+    parameters: [{ $ref: './learning-catalog.yaml#/components/parameters/LessonID' }]
+    post:
+      summary: Student starts or resumes the latest run. Restart creates a new run only after completion. Identical nonce replays the same run; a changed payload returns 409.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/Start' } } } }
+      responses:
+        '201': { $ref: '#/components/responses/State' }
+        default: { $ref: './learning-catalog.yaml#/components/responses/Error' }
+    get:
+      summary: Own results for this accessible lesson, newest run first. Student identity comes from session.
+      parameters: [{ $ref: './learning-catalog.yaml#/components/parameters/Limit' }, { $ref: './learning-catalog.yaml#/components/parameters/Offset' }]
+      responses:
+        '200': { description: Own results, content: { application/json: { schema: { $ref: '#/components/schemas/Results' } } } }
+        default: { $ref: './learning-catalog.yaml#/components/responses/Error' }
+  /catalog/lessons/{learningLessonID}/learning-attempts/{learningID}:
+    parameters:
+      - { $ref: './learning-catalog.yaml#/components/parameters/LessonID' }
+      - { name: learningID, in: path, required: true, schema: { type: string }, description: Own run UUID or current for the latest run. }
+    get:
+      summary: Own state, pinned published snapshot, latest submitted answers and only already revealed hints. Revoked lesson access also revokes this endpoint.
+      responses:
+        '200': { $ref: '#/components/responses/State' }
+        default: { $ref: './learning-catalog.yaml#/components/responses/Error' }
+  /catalog/lessons/{learningLessonID}/learning-attempts/{learningID}/answers:
+    parameters: [{ $ref: './learning-catalog.yaml#/components/parameters/LessonID' }, { $ref: '#/components/parameters/RunID' }]
+    get:
+      summary: Own immutable answer history for one run, including mistakes and pending/manual results.
+      parameters: [{ $ref: './learning-catalog.yaml#/components/parameters/Limit' }, { $ref: './learning-catalog.yaml#/components/parameters/Offset' }]
+      responses:
+        '200': { description: Answer history, content: { application/json: { schema: { $ref: './learning-catalog.yaml#/components/schemas/AttemptPage' } } } }
+        default: { $ref: './learning-catalog.yaml#/components/responses/Error' }
+  /catalog/lessons/{learningLessonID}/learning-attempts/{learningID}/complete:
+    parameters: [{ $ref: './learning-catalog.yaml#/components/parameters/LessonID' }, { $ref: '#/components/parameters/RunID' }]
+    post:
+      summary: Complete after every exercise has a submission; pending manual review is allowed. Completion time freezes on server, identical retries are safe. Incomplete returns 422.
+      requestBody: { $ref: '#/components/requestBodies/Action' }
+      responses:
+        '200': { $ref: '#/components/responses/State' }
+        default: { $ref: './learning-catalog.yaml#/components/responses/Error' }
+  /catalog/lessons/{learningLessonID}/learning-attempts/{learningID}/navigate:
+    parameters: [{ $ref: './learning-catalog.yaml#/components/parameters/LessonID' }, { $ref: '#/components/parameters/RunID' }]
+    post:
+      summary: Persist an unlocked step. Exercise prerequisites are enforced on server. Replaying a nonce does not move the cursor backwards; a changed payload returns 409.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/Navigate' } } }
+      responses:
+        '200': { $ref: '#/components/responses/State' }
+        default: { $ref: './learning-catalog.yaml#/components/responses/Error' }
+  /catalog/lessons/{learningLessonID}/learning-attempts/{learningID}/exercises/{exerciseID}/solution:
+    parameters:
+      - { $ref: './learning-catalog.yaml#/components/parameters/LessonID' }
+      - { $ref: '#/components/parameters/RunID' }
+      - { name: exerciseID, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      summary: Own submitted exercise solution. Manual answers require review. Any unfinished exam for this lesson blocks solutions, including older practice runs. Otherwise returns only the explanation or permitted objective answer, never the raw key record.
+      responses:
+        '200': { description: Authorized solution, content: { application/json: { schema: { $ref: '#/components/schemas/Solution' } } } }
+        default: { $ref: './learning-catalog.yaml#/components/responses/Error' }
+  /catalog/lessons/{learningLessonID}/learning-attempts/{learningID}/exercises/{exerciseID}/hints:
+    parameters:
+      - { $ref: './learning-catalog.yaml#/components/parameters/LessonID' }
+      - { $ref: '#/components/parameters/RunID' }
+      - { name: exerciseID, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      summary: Reveal and durably record the next hint from the pinned version. Same nonce cannot consume another hint. Exam mode, completed runs or exhausted hints return 422.
+      requestBody: { $ref: '#/components/requestBodies/Action' }
+      responses:
+        '200': { $ref: '#/components/responses/State' }
+        default: { $ref: './learning-catalog.yaml#/components/responses/Error' }
+components:
+  securitySchemes: { session: { type: apiKey, in: cookie, name: repet_session } }
+  parameters:
+    RunID: { name: learningID, in: path, required: true, schema: { type: string, format: uuid } }
+  requestBodies:
+    Action: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/Action' } } } }
+  responses:
+    State: { description: Own server-derived progress, content: { application/json: { schema: { $ref: '#/components/schemas/State' } } } }
+  schemas:
+    Action:
+      type: object
+      additionalProperties: false
+      required: [request_id]
+      properties: { request_id: { type: string, format: uuid } }
+    Start:
+      type: object
+      additionalProperties: false
+      required: [request_id]
+      properties:
+        request_id: { type: string, format: uuid }
+        restart: { type: boolean, default: false }
+        mode: { enum: [practice, exam], description: Defaults to practice for a new run; omitted on resume preserves mode. Mode cannot change during a run. }
+    Navigate:
+      type: object
+      additionalProperties: false
+      required: [request_id, step]
+      properties:
+        request_id: { type: string, format: uuid }
+        step: { type: string, pattern: '^(theory|example|results|exercise:[0-9a-f-]{36})$' }
+    Solution:
+      type: object
+      additionalProperties: false
+      required: [exercise_id, available, text]
+      properties:
+        exercise_id: { type: string, format: uuid }
+        available: { type: boolean }
+        text: { type: string }
+    Run:
+      type: object
+      additionalProperties: false
+      required: [id, lesson_id, version_id, number, status, mode, player_step, theory_seen, example_seen, started_at, completed_at, elapsed_seconds, total_exercises, answered_exercises, correct_exercises, pending_review, incorrect_attempts]
+      properties:
+        id: { type: string, format: uuid }
+        lesson_id: { type: string, format: uuid }
+        assignment_id: { type: string, format: uuid, description: Present for a dedicated assignment run; teacher fixes mode and selection. }
+        version_id: { type: string, format: uuid }
+        number: { type: integer, minimum: 1 }
+        status: { enum: [in_progress, completed] }
+        mode: { enum: [practice, exam] }
+        player_step: { type: string }
+        theory_seen: { type: boolean }
+        example_seen: { type: boolean }
+        started_at: { type: string, format: date-time }
+        completed_at: { type: [string, 'null'], format: date-time }
+        elapsed_seconds: { type: integer, minimum: 0, description: Server wall-clock duration, including time away. Not trusted browser active time. }
+        total_exercises: { type: integer, minimum: 0 }
+        answered_exercises: { type: integer, minimum: 0 }
+        correct_exercises: { type: integer, minimum: 0 }
+        pending_review: { type: integer, minimum: 0 }
+        incorrect_attempts: { type: integer, minimum: 0 }
+    Hint:
+      type: object
+      additionalProperties: false
+      required: [exercise_id, number, text, revealed_at]
+      properties:
+        exercise_id: { type: string, format: uuid }
+        number: { type: integer, minimum: 1, maximum: 5 }
+        text: { type: string, minLength: 1, maxLength: 4000 }
+        revealed_at: { type: string, format: date-time }
+    State:
+      type: object
+      additionalProperties: false
+      required: [attempt, version, answers, hints]
+      properties:
+        attempt: { $ref: '#/components/schemas/Run' }
+        version: { $ref: './learning-catalog.yaml#/components/schemas/Version' }
+        answers: { type: array, items: { $ref: './learning-catalog.yaml#/components/schemas/Attempt' } }
+        hints: { type: array, items: { $ref: '#/components/schemas/Hint' } }
+    Results:
+      allOf: [{ $ref: './learning-catalog.yaml#/components/schemas/Page' }, { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Run' } } } }]

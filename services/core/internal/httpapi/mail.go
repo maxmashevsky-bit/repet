@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"mime"
 	"net"
+	"net/mail"
 	"net/smtp"
 	"strings"
 	"time"
@@ -13,6 +15,20 @@ import (
 )
 
 func sendResetEmail(ctx context.Context, cfg config.Config, recipient, token string) error {
+	return sendEmail(ctx, cfg, recipient, "Репет: восстановление пароля", "Откройте "+strings.TrimRight(cfg.AppPublicURL, "/")+"/reset-password и введите одноразовый код:\n\n"+token+"\n\nКод действует 30 минут. Если вы не запрашивали смену пароля, проигнорируйте письмо.")
+}
+
+func sendVerificationEmail(ctx context.Context, cfg config.Config, recipient, token string) error {
+	return sendEmail(ctx, cfg, recipient, "Репет: подтвердите почту", "Подтвердите адрес электронной почты для входа в «Репет»:\n\n"+strings.TrimRight(cfg.AppPublicURL, "/")+"/verify-email#token="+token+"\n\nСсылка действует один час. Откройте её в браузере, где вы вошли в свой аккаунт. Если вы не регистрировались, проигнорируйте письмо.")
+}
+
+func sendEmail(ctx context.Context, cfg config.Config, recipient, subject, body string) error {
+	for _, address := range []string{cfg.SMTPFrom, recipient} {
+		parsed, err := mail.ParseAddress(address)
+		if err != nil || parsed.Address != address || strings.ContainsAny(address, "\r\n") {
+			return fmt.Errorf("invalid email address")
+		}
+	}
 	if cfg.SMTPAddr == "" {
 		return fmt.Errorf("SMTP_ADDR is not configured")
 	}
@@ -33,13 +49,12 @@ func sendResetEmail(ctx context.Context, cfg config.Config, recipient, token str
 		return err
 	}
 	defer client.Close()
-	if cfg.AppEnv == "production" {
-		if ok, _ := client.Extension("STARTTLS"); !ok {
-			return fmt.Errorf("SMTP STARTTLS is required in production")
-		}
+	if ok, _ := client.Extension("STARTTLS"); ok {
 		if err := client.StartTLS(&tls.Config{ServerName: host, MinVersion: tls.VersionTLS12}); err != nil {
 			return err
 		}
+	} else if cfg.AppEnv == "production" {
+		return fmt.Errorf("SMTP STARTTLS is required in production")
 	}
 	if cfg.SMTPUser != "" {
 		if err := client.Auth(smtp.PlainAuth("", cfg.SMTPUser, cfg.SMTPPassword, host)); err != nil {
@@ -59,14 +74,12 @@ func sendResetEmail(ctx context.Context, cfg config.Config, recipient, token str
 	message := strings.Join([]string{
 		"From: " + cfg.SMTPFrom,
 		"To: " + recipient,
-		"Subject: Repet password reset",
+		"Subject: " + mime.QEncoding.Encode("UTF-8", subject),
+		"MIME-Version: 1.0",
 		"Content-Type: text/plain; charset=UTF-8",
+		"Content-Transfer-Encoding: 8bit",
 		"",
-		"Open the password reset page and enter this one-time code:",
-		"",
-		token,
-		"",
-		"The code expires in 30 minutes.",
+		strings.ReplaceAll(body, "\n", "\r\n"),
 		"",
 	}, "\r\n")
 	if _, err := writer.Write([]byte(message)); err != nil {

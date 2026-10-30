@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "packageManager": "pnpm@11.19.0",
   "scripts": {
+    "test:exercise-engine": "node --experimental-strip-types --test tests/*.test.mjs",
     "dev": "next dev",
     "build": "next build",
     "typecheck": "tsc --noEmit",

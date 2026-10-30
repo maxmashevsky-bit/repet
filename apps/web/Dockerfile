@@ -5,6 +5,8 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile --ignore-scripts
 COPY . .
 ENV API_INTERNAL_URL=http://api:8080
+ARG HTML_PREVIEW_PUBLIC_URL=http://html.localhost:8081
+ENV HTML_PREVIEW_PUBLIC_URL=$HTML_PREVIEW_PUBLIC_URL
 RUN pnpm build
 
 FROM node:22-alpine

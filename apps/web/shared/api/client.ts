@@ -1,4 +1,4 @@
-import type { Assignment, Conversation, Dashboard, Lesson, Message, NotificationItem, Role, User } from "./types";
+import type { Assignment, Conversation, Dashboard, Lesson, Message, MessageAttachmentInput, NotificationItem, Role, User } from "./types";
 
 const API_BASE = "";
 
@@ -9,7 +9,14 @@ function internalReturnTo(value: string | null): string {
   return value;
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+export class ApiError extends Error {
+  constructor(message: string, public readonly status: number, public readonly code?: string) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
     ...init,
     credentials: "include",
@@ -22,13 +29,15 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const payload = (await response.json().catch(() => ({}))) as unknown;
   if (!response.ok) {
     let message = "Не удалось выполнить запрос";
+    let code: string | undefined;
     if (typeof payload === "object" && payload && "error" in payload) {
       const err = payload.error;
+      if (typeof err === "object" && err && "code" in err && typeof err.code === "string") code = err.code;
       if (typeof err === "object" && err && "message" in err && typeof err.message === "string") {
         message = err.message;
       }
     }
-    throw new Error(message);
+    throw new ApiError(message, response.status, code);
   }
   return payload as T;
 }
@@ -43,7 +52,7 @@ function post<T>(path: string, body: JsonBody, init: RequestInit = {}) {
 
 export const authApi = {
   register(input: { displayName: string; email: string; password: string; role: Role; acceptTerms: boolean }) {
-    return post<{ user: User }>("/api/v1/auth/register", {
+    return post<{ user: User; verification_email_sent: boolean }>("/api/v1/auth/register", {
       display_name: input.displayName,
       email: input.email,
       password: input.password,
@@ -63,12 +72,24 @@ export const authApi = {
   resetPassword(token: string, password: string) {
     return post<{ status: string }>("/api/v1/auth/reset-password", { token, password });
   },
+  resendVerification: () => post<{status:string}>("/api/v1/auth/verification-email", {}),
+  verifyEmail: (token:string) => post<{user:User}>("/api/v1/auth/verify-email", {token}),
   safeReturnTo: internalReturnTo
 };
 
 export const productApi = {
   me: () => request<User>("/api/v1/me"),
-  dashboard: () => request<Dashboard>("/api/v1/dashboard"),
+  dashboard: async (): Promise<Dashboard> => {
+    const dashboard = await request<Dashboard>("/api/v1/dashboard");
+    return {
+      ...dashboard,
+      relations: dashboard.relations ?? [],
+      lessons: dashboard.lessons ?? [],
+      assignments: dashboard.assignments ?? [],
+      conversations: dashboard.conversations ?? [],
+      notifications: dashboard.notifications ?? []
+    };
+  },
   updateProfile: (input: { displayName: string; timezone: string; locale: string }) =>
     post<User>("/api/v1/profile", {
       display_name: input.displayName,
@@ -88,16 +109,17 @@ export const productApi = {
       starts_at: input.startsAt,
       ends_at: input.endsAt
     }),
-  conversations: async () => (await request<{ conversations: Conversation[] }>("/api/v1/messages/conversations")).conversations,
-  messages: async (conversationID: string, offset = 0) =>
-    (await request<{ messages: Message[] }>(`/api/v1/messages/conversations/${conversationID}?offset=${offset}`)).messages,
-  sendMessage: (conversationID: string, body: string) =>
+  conversations: async (signal?:AbortSignal) => (await request<{ conversations: Conversation[] }>("/api/v1/messages/conversations",{signal})).conversations ?? [],
+  messages: async (conversationID: string, offset = 0,signal?:AbortSignal) =>
+    (await request<{ messages: Message[] }>(`/api/v1/messages/conversations/${conversationID}?offset=${offset}`,{signal})).messages ?? [],
+  markMessagesRead:(conversationID:string,through_message_id:string)=>post<{unread_count:number}>(`/api/v1/messages/conversations/${conversationID}/read`,{through_message_id}),
+  sendMessage: (conversationID: string, body: string,requestID=crypto.randomUUID(),attachment:MessageAttachmentInput={}) =>
     post<Message>(
       `/api/v1/messages/conversations/${conversationID}`,
-      { body },
-      { headers: { "Idempotency-Key": crypto.randomUUID() } }
+      { body,...attachment },
+      { headers: { "Idempotency-Key": requestID } }
     ),
-  assignments: async () => (await request<{ assignments: Assignment[] }>("/api/v1/assignments")).assignments,
+  assignments: async () => (await request<{ assignments: Assignment[] }>("/api/v1/assignments")).assignments ?? [],
   createAssignment: (input: {
     studentID: string;
     title: string;
@@ -120,7 +142,7 @@ export const productApi = {
     post<Assignment>(`/api/v1/assignments/${assignmentID}/submit`, { answer }),
   gradeAssignment: (assignmentID: string, score: number, feedback: string, revision: boolean) =>
     post<Assignment>(`/api/v1/assignments/${assignmentID}/grade`, { score, feedback, revision }),
-  notifications: async () => (await request<{ notifications: NotificationItem[] }>("/api/v1/notifications")).notifications,
+  notifications: async (signal?:AbortSignal) => (await request<{ notifications: NotificationItem[] }>("/api/v1/notifications",{signal})).notifications ?? [],
   markNotificationRead: (notificationID: string) => post<{ status: string }>(`/api/v1/notifications/${notificationID}/read`, {}),
   markAllNotificationsRead: () => post<{ status: string }>("/api/v1/notifications/mark-all-read", {})
 };

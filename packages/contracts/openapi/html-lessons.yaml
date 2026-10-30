@@ -1,0 +1,123 @@
+openapi: 3.1.0
+info: {title: Repet isolated HTML lessons, version: 1.0.0}
+security: [{session: []}]
+paths:
+  /api/v1/html-lessons:
+    get:
+      summary: Available HTML metadata, never source code
+      parameters:
+        - {name: q, in: query, schema: {type: string, maxLength: 200}}
+        - {name: grade, in: query, schema: {type: integer, minimum: 1, maximum: 11}}
+        - {name: course_id, in: query, schema: {type: string, format: uuid}}
+        - {name: topic_id, in: query, schema: {type: string, format: uuid}}
+        - {name: track, in: query, schema: {enum: [school, olympiad, oge, ege]}}
+        - {name: difficulty, in: query, schema: {type: integer, minimum: 1, maximum: 5}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100}}
+        - {name: offset, in: query, schema: {type: integer, minimum: 0, maximum: 100000}}
+      responses:
+        '200': {description: 'Paginated items, total, limit, offset; source and upload nonces excluded'}
+    post:
+      summary: Tutor imports an immutable UTF-8 HTML source version
+      requestBody: {$ref: '#/components/requestBodies/Import'}
+      responses:
+        '201': {description: Metadata with lesson/version IDs and SHA-256}
+        '400': {description: Invalid HTML or metadata or unknown fields}
+        '403': {description: Not a tutor}
+        '409': {description: Nonce conflict or author quota reached}
+  /api/v1/html-lessons/{id}:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    get:
+      parameters:
+        - {name: version_id, in: query, schema: {type: string, format: uuid}}
+        - {name: assignment_id, in: query, schema: {type: string, format: uuid}}
+      responses:
+        '200': {description: Accessible metadata; assignments pin a version}
+        '404': {description: Unavailable resource}
+  /api/v1/html-lessons/{id}/versions:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    get: {summary: Author-only metadata history, responses: {'200': {description: Immutable version metadata items}}}
+    post:
+      requestBody: {$ref: '#/components/requestBodies/Import'}
+      responses: {'201': {description: New version or durable replay}}
+  /api/v1/html-lessons/{id}/source:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    get:
+      summary: Author-only original source returned as JSON, never text/html
+      parameters: [{name: version_id, in: query, required: true, schema: {type: string, format: uuid}}]
+      responses: {'200': {description: JSON object containing source}, '403': {description: Not the author}}
+  /api/v1/html-lessons/{id}/publish:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    post:
+      requestBody: {$ref: '#/components/requestBodies/Version'}
+      responses: {'200': {description: Published current version}, '422': {description: Course or topic hierarchy not published}}
+  /api/v1/html-lessons/{id}/archive:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    post: {responses: {'200': {description: Archived; assigned snapshots retained}}}
+  /api/v1/html-lessons/{id}/preview:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    post:
+      summary: Issue a five-minute capability for a different hostname/origin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                version_id: {type: string, format: uuid}
+                assignment_id: {type: string, format: uuid}
+      responses: {'200': {description: 'url and expires_in=300; no session tokens'}, '404': {description: Unavailable version or assignment}}
+  /api/v1/html-lessons/{id}/assign:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [request_id, student_id, due_at]
+              properties:
+                request_id: {type: string, format: uuid}
+                student_id: {type: string, format: uuid}
+                due_at: {type: string, format: date-time}
+      responses: {'201': {description: Existing text assignment with html lesson/version reference; manual grading only}, '409': {description: Changed nonce payload}}
+  /api/v1/html-lessons/{id}/convert:
+    parameters: [{$ref: '#/components/parameters/ID'}]
+    post:
+      requestBody: {$ref: '#/components/requestBodies/Version'}
+      responses: {'201': {description: Native LearningLesson draft with provenance and no fabricated exercises or keys}}
+components:
+  securitySchemes:
+    session: {type: apiKey, in: cookie, name: repet_session}
+  parameters:
+    ID: {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+  requestBodies:
+    Version:
+      required: true
+      content: {application/json: {schema: {type: object, additionalProperties: false, required: [version_id], properties: {version_id: {type: string, format: uuid}}}}}
+    Import:
+      required: true
+      content: {application/json: {schema: {$ref: '#/components/schemas/Import'}}}
+  schemas:
+    Import:
+      type: object
+      additionalProperties: false
+      required: [request_id, course_id, topic_id, source, filename, track, grade_min, grade_max, difficulty, rights_status]
+      properties:
+        request_id: {type: string, format: uuid}
+        course_id: {type: string, format: uuid}
+        topic_id: {type: string, format: uuid}
+        source: {type: string, description: Valid UTF-8 HTML of at most 524288 encoded bytes; preserved including BOM}
+        filename: {type: string, maxLength: 180, description: HTML or HTM basename without path separators}
+        title: {type: string, maxLength: 180}
+        summary: {type: string, maxLength: 10000}
+        track: {enum: [school, olympiad, oge, ege]}
+        grade_min: {type: integer, minimum: 1, maximum: 11}
+        grade_max: {type: integer, minimum: 1, maximum: 11}
+        difficulty: {type: integer, minimum: 1, maximum: 5}
+        rights_status: {enum: [own, permission, open_license]}
+        license: {type: string, maxLength: 2000, description: Required for permission or open_license}
+        source_label: {type: string, maxLength: 1000}

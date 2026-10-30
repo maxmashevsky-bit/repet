@@ -1,5 +1,9 @@
 .env
 .env.local
+.env.production
+secrets/
+backups/
+server-bundle*.tar.gz
 .DS_Store
 .references/
 node_modules/
@@ -12,3 +16,4 @@ coverage/
 tmp/
 services/core/bin/
 services/core/coverage.out
+.data/

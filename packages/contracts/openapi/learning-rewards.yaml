@@ -1,0 +1,61 @@
+openapi: 3.1.0
+info: {title: Repet optional rewards, version: 1.0.0}
+servers: [{url: /api/v1}]
+security: [{session: []}]
+paths:
+  /learning-rewards/{studentID}:
+    parameters: [{$ref: '#/components/parameters/StudentID'}]
+    get:
+      summary: Own or tutor-scoped rewards; server reconciles qualified completed evidence under student lock
+      parameters: [{$ref: './exercise-bank.yaml#/components/parameters/Limit'}, {$ref: './exercise-bank.yaml#/components/parameters/Offset'}]
+      responses:
+        '200': {description: 'enabled/xp/level/level_progress/level_target/weekly_xp/weekly_achievements and awards page; disabled context does not expose awards', content: {application/json: {schema: {$ref: '#/components/schemas/Summary'}}}}
+        '403': {description: Unsupported role}
+        '404': {description: Foreign child or inactive tutor relationship}
+  /learning-rewards/{studentID}/preference:
+    parameters: [{$ref: '#/components/parameters/StudentID'}]
+    get:
+      summary: Current tutor's optional reward setting for an active student
+      responses:
+        '200': {description: Current preference, content: {application/json: {schema: {$ref: '#/components/schemas/Preference'}}}}
+        '403': {description: Tutor required}
+        '404': {description: Missing active relationship}
+    put:
+      summary: Idempotent toggle; enabling after opt-out does not backfill new awards for the disabled interval
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, required: [enabled], properties: {enabled: {type: boolean}}}
+      responses:
+        '200': {description: Preference saved, content: {application/json: {schema: {$ref: '#/components/schemas/Preference'}}}}
+        '400': {description: Missing enabled or unknown/server-owned input fields}
+        '403': {description: Tutor required}
+        '404': {description: Missing active relationship}
+components:
+  securitySchemes:
+    session: {type: apiKey, in: cookie, name: repet_session}
+  parameters:
+    StudentID: {name: studentID, in: path, required: true, schema: {type: string, format: uuid}}
+  schemas:
+    Preference:
+      type: object
+      additionalProperties: false
+      required: [enabled, enabled_from, updated_at]
+      properties:
+        enabled: {type: boolean}
+        enabled_from: {type: [string, 'null'], format: date-time}
+        updated_at: {type: [string, 'null'], format: date-time}
+    Summary:
+      type: object
+      additionalProperties: false
+      required: [enabled, xp, level, level_progress, level_target, weekly_xp, weekly_achievements, awards]
+      properties:
+        enabled: {type: boolean}
+        xp: {type: integer, minimum: 0}
+        level: {type: integer, minimum: 0}
+        level_progress: {type: integer, minimum: 0, maximum: 99}
+        level_target: {const: 100}
+        weekly_xp: {type: integer, minimum: 0}
+        weekly_achievements: {type: integer, minimum: 0}
+        awards: {type: object, description: 'items with id/title/points=10/earned_at, total, limit, offset. Each logical source exercise awarded once; no keys or answers'}

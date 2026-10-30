@@ -14,13 +14,25 @@ import (
 	"tutor-platform/services/core/internal/apperr"
 	"tutor-platform/services/core/internal/auth"
 	"tutor-platform/services/core/internal/domain"
+	"tutor-platform/services/core/internal/objectstorage"
+	"tutor-platform/services/core/internal/pdfextract"
 	"tutor-platform/services/core/internal/platform"
 )
 
 const DefaultOrganizationID = "00000000-0000-4000-8000-000000000001"
 
 type Store struct {
-	db *pgxpool.Pool
+	db      *pgxpool.Pool
+	objects objectstorage.ObjectStorage
+	pdf     PDFExtractor
+}
+
+type PDFExtractor interface {
+	Extract(context.Context, []byte) (pdfextract.Result, error)
+}
+
+func NewWithPDF(db *pgxpool.Pool, objects objectstorage.ObjectStorage, extractor PDFExtractor) *Store {
+	return &Store{db: db, objects: objects, pdf: extractor}
 }
 
 func New(db *pgxpool.Pool) *Store {
@@ -59,11 +71,11 @@ func (s *Store) EnsureUser(ctx context.Context, p auth.Principal) (domain.User, 
 
 func (s *Store) GetUser(ctx context.Context, userID string) (domain.User, error) {
 	row := s.db.QueryRow(ctx, `
-		select id::text, organization_id::text, email, display_name, role, timezone, locale, created_at
+		select id::text, organization_id::text, email, display_name, role, timezone, locale, created_at, email_verified_at is not null
 		from users where id=$1
 	`, userID)
 	var u domain.User
-	if err := row.Scan(&u.ID, &u.OrganizationID, &u.Email, &u.DisplayName, &u.Role, &u.Timezone, &u.Locale, &u.CreatedAt); err != nil {
+	if err := row.Scan(&u.ID, &u.OrganizationID, &u.Email, &u.DisplayName, &u.Role, &u.Timezone, &u.Locale, &u.CreatedAt, &u.EmailVerified); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.User{}, apperr.ErrNotFound
 		}
@@ -193,7 +205,7 @@ func (s *Store) ListRelations(ctx context.Context, actor domain.User) ([]domain.
 		return nil, err
 	}
 	defer rows.Close()
-	var out []domain.Relation
+	out := make([]domain.Relation, 0)
 	for rows.Next() {
 		var rel domain.Relation
 		if err := rows.Scan(&rel.ID, &rel.TutorID, &rel.StudentID, &rel.Status, &rel.CreatedAt); err != nil {
@@ -279,7 +291,7 @@ func (s *Store) ListLessonsPage(ctx context.Context, actor domain.User, offset i
 		return nil, err
 	}
 	defer rows.Close()
-	var out []domain.Lesson
+	out := make([]domain.Lesson, 0)
 	for rows.Next() {
 		var lesson domain.Lesson
 		if err := rows.Scan(&lesson.ID, &lesson.RelationID, &lesson.TutorID, &lesson.StudentID, &lesson.Title, &lesson.StartsAt, &lesson.EndsAt, &lesson.Status, &lesson.CreatedAt); err != nil {

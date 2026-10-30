@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useState } from "react";
-import { authApi } from "../../shared/api/client";
-import type { Role } from "../../shared/api/types";
-import { Brand, BrandMark } from "../ui/Brand";
+import { FormEvent, useState, useEffect } from "react";
+import { authApi, productApi, ApiError } from "../../shared/api/client";
+import type { Role, User } from "../../shared/api/types";
+import { Brand } from "../ui/Brand";
 import { Icon } from "../ui/Icon";
 
 function PublicShell({
@@ -24,26 +24,13 @@ function PublicShell({
       <header className="auth-topbar">
         <Brand href="/login" />
         <div className="auth-top-action">
-          <span>{actionText}</span>
-          <Link className="button secondary" href={actionHref}>{actionLabel}</Link>
+          <Link className="button secondary" href={actionHref}><span>{actionText} </span>{actionLabel}</Link>
         </div>
       </header>
       <div className="auth-shell">
-        <section className="auth-promo" aria-labelledby="auth-title">
-          <div className="auth-copy">
-            <h1 id="auth-title">Учиться<br />проще вместе</h1>
-            <p>Занятия, задания и общение —<br />в одном спокойном пространстве.</p>
-          </div>
-          <ul className="benefits">
-            <li><span className="benefit-icon"><Icon name="calendar" /></span>Все занятия под рукой</li>
-            <li><span className="benefit-icon"><Icon name="chat" /></span>Прямая связь с преподавателем</li>
-            <li><span className="benefit-icon"><Icon name="chart" /></span>Прогресс без лишнего стресса</li>
-          </ul>
-          <BrandMark decorative />
-        </section>
         <section className="auth-card">{children}</section>
       </div>
-      <footer className="auth-footer">Нравится «Репет»? <span>Поддержать создателя ♥</span></footer>
+      <footer className="auth-footer"><Link href="/privacy">Конфиденциальность</Link><Link href="/terms">Условия использования</Link></footer>
     </main>
   );
 }
@@ -65,8 +52,8 @@ export function RegisterPage() {
     setLoading(true);
     setError("");
     try {
-      await authApi.register({ displayName, email, password, role, acceptTerms });
-      router.push(authApi.safeReturnTo(search.get("returnTo")));
+      const result = await authApi.register({ displayName, email, password, role, acceptTerms });
+      router.push(result.user.email_verification_required && !result.user.email_verified ? `/verify-email?sent=${result.verification_email_sent ? "1" : "0"}` : authApi.safeReturnTo(search.get("returnTo")));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Регистрация не удалась");
     } finally {
@@ -77,30 +64,28 @@ export function RegisterPage() {
   return (
     <PublicShell actionText="Уже есть аккаунт?" actionLabel="Войти" actionHref="/login">
       <p className="eyebrow">Добро пожаловать</p>
-      <h2>Создайте аккаунт</h2>
-      <p className="muted">Сначала выберите, как вы будете пользоваться «Репет»</p>
+      <h1>Создайте аккаунт</h1>
+      <p className="muted">Для учеников и преподавателей</p>
       <form onSubmit={submit} className="form-stack">
         <fieldset className="role-grid">
           <legend>Кто вы?</legend>
-          <button type="button" className={role === "student" ? "role-card active" : "role-card"} onClick={() => setRole("student")}>
+          <button type="button" aria-pressed={role === "student"} className={role === "student" ? "role-card active" : "role-card"} onClick={() => setRole("student")}>
             <span className="role-icon"><Icon name="book" size={36} /></span>
             <strong>Я ученик</strong>
-            <span>Учусь и выполняю задания</span>
             {role === "student" ? <span className="role-check"><Icon name="check" size={16} /></span> : null}
           </button>
-          <button type="button" className={role === "tutor" ? "role-card active" : "role-card"} onClick={() => setRole("tutor")}>
+          <button type="button" aria-pressed={role === "tutor"} className={role === "tutor" ? "role-card active" : "role-card"} onClick={() => setRole("tutor")}>
             <span className="role-icon"><Icon name="monitor" size={36} /></span>
             <strong>Я учитель</strong>
-            <span>Провожу занятия и проверяю работы</span>
             {role === "tutor" ? <span className="role-check"><Icon name="check" size={16} /></span> : null}
           </button>
         </fieldset>
-        <label>Имя и фамилия<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="Как к вам обращаться" required /></label>
-        <label>Электронная почта<input value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@example.com" type="email" required /></label>
+        <label>Имя и фамилия<input autoComplete="name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="Как к вам обращаться" required /></label>
+        <label>Электронная почта<input autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@example.com" type="email" required /></label>
         <label>
           Пароль
           <span className="password-row">
-            <input value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Не менее 8 символов" type={showPassword ? "text" : "password"} minLength={8} required />
+            <input autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Не менее 8 символов" type={showPassword ? "text" : "password"} minLength={8} required />
             <button type="button" className="password-toggle" aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"} onClick={() => setShowPassword((value) => !value)}>
               <Icon name="eye" />
             </button>
@@ -113,7 +98,7 @@ export function RegisterPage() {
         {error ? <p className="field-error">{error}</p> : null}
         <button type="submit" disabled={loading || !acceptTerms}>{loading ? "Создаём..." : "Создать аккаунт"}</button>
       </form>
-      <p className="centered">Уже есть аккаунт? <Link href="/login">Войти</Link></p>
+      <p className="centered"><Link className="button secondary" href="/login">Уже есть аккаунт? Войти</Link></p>
     </PublicShell>
   );
 }
@@ -131,8 +116,8 @@ export function LoginPage() {
     setLoading(true);
     setError("");
     try {
-      await authApi.login({ email, password });
-      router.push(authApi.safeReturnTo(search.get("returnTo")));
+      const result = await authApi.login({ email, password });
+      router.push(result.user.email_verification_required && !result.user.email_verified ? "/verify-email" : authApi.safeReturnTo(search.get("returnTo")));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Проверьте email и пароль");
     } finally {
@@ -143,10 +128,10 @@ export function LoginPage() {
   return (
     <PublicShell actionText="Нет аккаунта?" actionLabel="Создать" actionHref="/register">
       <p className="eyebrow">Вход</p>
-      <h2>Вернитесь к занятиям</h2>
+      <h1>Вход в аккаунт</h1>
       <form onSubmit={submit} className="form-stack">
-        <label>Email<input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required /></label>
-        <label>Пароль<input value={password} onChange={(event) => setPassword(event.target.value)} type="password" required /></label>
+        <label>Электронная почта<input autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} type="email" required /></label>
+        <label>Пароль<input autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} type="password" required /></label>
         {error ? <p className="field-error">{error}</p> : null}
         <button type="submit" disabled={loading}>{loading ? "Входим..." : "Войти"}</button>
       </form>
@@ -174,10 +159,10 @@ export function ForgotPasswordPage() {
 
   return (
     <PublicShell actionText="Вспомнили пароль?" actionLabel="Войти" actionHref="/login">
-      <h2>Восстановление пароля</h2>
+      <h1>Восстановление пароля</h1>
       {done ? <p className="notice">Если аккаунт существует, письмо с кодом отправлено. <Link href="/reset-password">Ввести код</Link></p> : null}
       <form onSubmit={submit} className="form-stack">
-        <label>Email<input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required /></label>
+        <label>Электронная почта<input autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} type="email" required /></label>
         {error ? <p className="field-error">{error}</p> : null}
         <button type="submit">Отправить инструкцию</button>
       </form>
@@ -204,14 +189,28 @@ export function ResetPasswordPage() {
 
   return (
     <PublicShell actionText="Вернуться ко входу" actionLabel="Войти" actionHref="/login">
-      <h2>Новый пароль</h2>
+      <h1>Новый пароль</h1>
       {done ? <p className="notice">Пароль изменён. <Link href="/login">Войти</Link></p> : null}
       <form onSubmit={submit} className="form-stack">
-        <label>Токен<input value={token} onChange={(event) => setToken(event.target.value)} required /></label>
-        <label>Новый пароль<input value={password} onChange={(event) => setPassword(event.target.value)} type="password" minLength={8} required /></label>
+        <label>Код восстановления<input autoComplete="one-time-code" value={token} onChange={(event) => setToken(event.target.value)} required /></label>
+        <label>Новый пароль<input autoComplete="new-password" value={password} onChange={(event) => setPassword(event.target.value)} type="password" minLength={8} required /></label>
         {error ? <p className="field-error">{error}</p> : null}
         <button type="submit">Сохранить пароль</button>
       </form>
     </PublicShell>
   );
+}
+
+export function VerifyEmailPage() {
+  const router=useRouter(),search=useSearchParams();
+  const [user,setUser]=useState<User|null>(null),[ready,setReady]=useState(false),[token,setToken]=useState(""),[busy,setBusy]=useState(false),[done,setDone]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState(search.get("sent")==="1"?"Письмо отправлено. Проверьте входящие и папку «Спам».":""),[cooldown,setCooldown]=useState(0);
+  useEffect(()=>{
+    const value=new URLSearchParams(window.location.hash.slice(1)).get("token");
+    if(value)history.replaceState(null,"","/verify-email");
+    productApi.me().then(user=>{if(value)setToken(value);setUser(user);if(user.email_verified)setDone(true);}).catch(err=>{if(!(err instanceof ApiError&&err.status===401))setError("Не удалось загрузить аккаунт. Обновите страницу.");}).finally(()=>setReady(true));
+  },[]);
+  useEffect(()=>{if(cooldown<=0)return;const timer=setTimeout(()=>setCooldown(value=>Math.max(0,value-1)),1000);return()=>clearTimeout(timer);},[cooldown]);
+  async function confirm(event:FormEvent){event.preventDefault();setBusy(true);setError("");try{const result=await authApi.verifyEmail(token);setUser(result.user);setDone(true);setToken("");}catch{setError("Ссылка недействительна, истекла или относится к другому аккаунту. Запросите новое письмо.");}finally{setBusy(false);}}
+  async function resend(){setBusy(true);setError("");setNotice("");try{await authApi.resendVerification();setNotice("Письмо отправлено. Ссылка действует один час.");setCooldown(60);}catch(err){if(err instanceof ApiError&&err.status===409){setError("Письмо уже запрашивали. Подождите минуту перед повторной отправкой.");setCooldown(60);}else setError("Не удалось отправить письмо. Повторите позже; если ошибка остаётся, сообщите администратору.");}finally{setBusy(false);}}
+  return <PublicShell actionText="Другой аккаунт?" actionLabel="Войти" actionHref="/login"><p className="eyebrow">Безопасность аккаунта</p><h1>{done?"Почта подтверждена":"Подтвердите почту"}</h1>{!ready?<p role="status">Загружаем...</p>:done?<><p>Теперь можно перейти к занятиям.</p><button onClick={()=>router.push("/")}>Открыть кабинет</button></>:!user?<p>Войдите в аккаунт, для которого пришло письмо, затем снова откройте ссылку из письма. <Link href="/login?returnTo=%2Fverify-email">Войти</Link></p>:<div className="form-stack"><p className="muted">Отправим ссылку на <strong>{user.email}</strong>. Откройте её в этом браузере и подтвердите адрес.</p>{notice?<p className="notice" role="status">{notice}</p>:null}{token?<form onSubmit={confirm}><button disabled={busy} type="submit">{busy?"Подтверждаем...":"Подтвердить электронную почту"}</button></form>:null}<button className="secondary" disabled={busy||cooldown>0} onClick={resend}>{cooldown>0?`Повторить через ${cooldown} с`:busy?"Отправляем...":"Отправить письмо ещё раз"}</button></div>}{error?<p role="alert" className="field-error">{error}</p>:null}</PublicShell>;
 }

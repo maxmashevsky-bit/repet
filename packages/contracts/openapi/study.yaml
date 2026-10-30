@@ -1,0 +1,114 @@
+openapi: 3.1.0
+info: {title: Repet practice and mock exams, version: 1.0.0}
+servers: [{url: /api/v1}]
+security: [{session: []}]
+paths:
+  /exam-specifications:
+    get:
+      summary: Own tutor versions or published student-accessible configurations
+      parameters: [{$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Offset'}]
+      responses: {'200': {description: 'items, total, limit, offset; draft versions hidden from students'}, '403': {description: Unsupported role}}
+    post:
+      summary: Tutor creates an immutable version; parent_id creates a new family version
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/SpecificationInput'}}}}
+      responses: {'201': {description: Created or idempotent replay}, '400': {description: Invalid input or server-owned fields}, '404': {description: Foreign collection or parent}, '409': {description: Request ID reused with different payload}}
+  /exam-specifications/{specID}:
+    parameters: [{$ref: '#/components/parameters/SpecID'}]
+    get:
+      responses: {'200': {description: Immutable configuration, content: {application/json: {schema: {$ref: '#/components/schemas/Specification'}}}}, '404': {description: Unavailable configuration}}
+  /exam-specifications/{specID}/publish:
+    parameters: [{$ref: '#/components/parameters/SpecID'}]
+    post:
+      summary: Author validates source pool and publishes this version
+      requestBody: {$ref: '#/components/requestBodies/Empty'}
+      responses: {'200': {description: Published}, '422': {description: Insufficient distinct exercises for configured slots}}
+  /exam-specifications/{specID}/archive:
+    parameters: [{$ref: '#/components/parameters/SpecID'}]
+    post:
+      requestBody: {$ref: '#/components/requestBodies/Empty'}
+      responses: {'200': {description: Archived; existing sessions keep their immutable version}}
+  /study-sessions:
+    get:
+      summary: Own student history; overdue exams finalized by the server
+      parameters: [{$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Offset'}]
+      responses: {'200': {description: 'items with id/title/attempt/deadline_at/seed, total, limit, offset'}, '403': {description: Student required}}
+    post:
+      summary: Start a reproducible practice or exam, or repeat mistakes from a completed session
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/Start'}}}}
+      responses: {'201': {description: Created or replay, content: {application/json: {schema: {$ref: '#/components/schemas/Session'}}}}, '409': {description: Active session in same source or conflicting request ID}, '422': {description: Insufficient tasks or missing manual reviewer relationship}}
+  /study-sessions/{sessionID}:
+    parameters: [{name: sessionID, in: path, required: true, schema: {type: string, format: uuid}}]
+    get:
+      summary: Own pinned state and authoritative database time; answers checked but concealed until submission
+      responses: {'200': {description: Current state, content: {application/json: {schema: {$ref: '#/components/schemas/Session'}}}}, '404': {description: Foreign session or revoked access}}
+  /study-reviews:
+    get:
+      summary: Tutor queue of latest ungraded long answers; unfinished exam answers are excluded
+      parameters: [{$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Offset'}]
+      responses: {'200': {description: 'items with session_id/lesson_id/attempt, total, limit, offset'}, '403': {description: Tutor required}}
+components:
+  securitySchemes:
+    session: {type: apiKey, in: cookie, name: repet_session}
+  parameters:
+    Limit: {$ref: './exercise-bank.yaml#/components/parameters/Limit'}
+    Offset: {$ref: './exercise-bank.yaml#/components/parameters/Offset'}
+    SpecID: {name: specID, in: path, required: true, schema: {type: string, format: uuid}}
+  requestBodies:
+    Empty: {required: true, content: {application/json: {schema: {type: object, additionalProperties: false}}}}
+  schemas:
+    Slot:
+      type: object
+      additionalProperties: false
+      required: [number, count, points]
+      properties:
+        number: {type: integer, minimum: 1, maximum: 100}
+        count: {type: integer, minimum: 1, maximum: 100}
+        points: {type: integer, minimum: 1, maximum: 100}
+    SpecificationInput:
+      type: object
+      additionalProperties: false
+      required: [request_id, collection_id, title, direction, year, duration_seconds, slots]
+      properties:
+        request_id: {type: string, format: uuid}
+        parent_id: {type: string, description: Empty or own configuration UUID}
+        collection_id: {type: string, format: uuid}
+        title: {type: string, minLength: 1, maxLength: 200}
+        direction: {enum: [oge, ege_basic, ege_profile]}
+        year: {type: integer, minimum: 1, maximum: 9999}
+        duration_seconds: {type: integer, minimum: 60, maximum: 28800}
+        instructions: {type: string, maxLength: 10000}
+        slots: {type: array, minItems: 1, maxItems: 100, items: {$ref: '#/components/schemas/Slot'}, description: Unique numbers and at most 100 selected exercises overall}
+    Specification:
+      type: object
+      properties:
+        id: {type: string, format: uuid}
+        family_id: {type: string, format: uuid}
+        version: {type: integer, minimum: 1}
+        status: {enum: [draft, published, archived]}
+        exercise_count: {type: integer, description: Distinct logical exercises in the direction pool}
+        topics: {type: array, items: {type: string}}
+      description: Also includes immutable title/author/collection/direction/year/duration/instructions/slots; no keys
+    Start:
+      type: object
+      additionalProperties: false
+      required: [request_id, specification_id, mode]
+      properties:
+        request_id: {type: string, format: uuid}
+        specification_id: {type: string, format: uuid}
+        mode: {enum: [practice, exam]}
+        seed: {type: string, maxLength: 64, pattern: '^[A-Za-z0-9-]*$', description: Empty generates a server seed; same seed and specification reproduce selection/order}
+        topic: {type: string, maxLength: 400, description: Practice only}
+        count: {type: integer, minimum: 0, maximum: 100, description: Practice 1-100; exam zero}
+        repeat_session_id: {type: string, description: Own completed session in same specification; practice only}
+    Session:
+      type: object
+      required: [id, specification, seed, deadline_at, server_time, points, max_points, state]
+      properties:
+        id: {type: string, format: uuid}
+        specification: {$ref: '#/components/schemas/Specification'}
+        seed: {type: string}
+        deadline_at: {type: [string, 'null'], format: date-time}
+        server_time: {type: string, format: date-time}
+        points: {type: integer, minimum: 0, description: Zero during active exam; raw configured points, not an official exam score}
+        max_points: {type: integer, minimum: 1}
+        state: {$ref: './learning-progress.yaml#/components/schemas/State'}

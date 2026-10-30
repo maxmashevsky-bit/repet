@@ -9,33 +9,39 @@ type Conversation struct {
 	StudentID   string    `json:"student_id"`
 	StudentName string    `json:"student_name"`
 	LastMessage string    `json:"last_message"`
+	UnreadCount int       `json:"unread_count"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
 type Message struct {
-	ID             string    `json:"id"`
-	ConversationID string    `json:"conversation_id"`
-	AuthorID       string    `json:"author_id"`
-	Body           string    `json:"body"`
-	CreatedAt      time.Time `json:"created_at"`
+	Attachment     *ChatAttachment `json:"attachment,omitempty"`
+	ID             string          `json:"id"`
+	ConversationID string          `json:"conversation_id"`
+	AuthorID       string          `json:"author_id"`
+	Body           string          `json:"body"`
+	CreatedAt      time.Time       `json:"created_at"`
+	Sequence       int64           `json:"sequence"`
 }
 
 type Assignment struct {
-	ID          string    `json:"id"`
-	TutorID     string    `json:"tutor_id"`
-	StudentID   string    `json:"student_id"`
-	StudentName string    `json:"student_name"`
-	Title       string    `json:"title"`
-	Subject     string    `json:"subject"`
-	Topic       string    `json:"topic"`
-	Body        string    `json:"body"`
-	Status      string    `json:"status"`
-	DueAt       time.Time `json:"due_at"`
-	MaxScore    int       `json:"max_score"`
-	Score       *int      `json:"score,omitempty"`
-	Feedback    string    `json:"feedback"`
-	Answer      string    `json:"answer"`
-	CreatedAt   time.Time `json:"created_at"`
+	HTML        *HTMLAssignment     `json:"html,omitempty"`
+	Kind        string              `json:"kind"`
+	Material    *AssignmentMaterial `json:"material,omitempty"`
+	ID          string              `json:"id"`
+	TutorID     string              `json:"tutor_id"`
+	StudentID   string              `json:"student_id"`
+	StudentName string              `json:"student_name"`
+	Title       string              `json:"title"`
+	Subject     string              `json:"subject"`
+	Topic       string              `json:"topic"`
+	Body        string              `json:"body"`
+	Status      string              `json:"status"`
+	DueAt       time.Time           `json:"due_at"`
+	MaxScore    int                 `json:"max_score"`
+	Score       *int                `json:"score,omitempty"`
+	Feedback    string              `json:"feedback"`
+	Answer      string              `json:"answer"`
+	CreatedAt   time.Time           `json:"created_at"`
 }
 
 type Notification struct {

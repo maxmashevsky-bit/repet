@@ -1,9 +1,11 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { authApi, productApi } from "../../shared/api/client";
 import { useWorkspace } from "../app-shell/AppShell";
 import { Icon } from "../ui/Icon";
+import {TeachingSettings} from "./TeachingSettings";
 
 export function SettingsPage() {
   const { dashboard, refresh } = useWorkspace();
@@ -36,13 +38,15 @@ export function SettingsPage() {
         <a className="active" href="#profile"><Icon name="user" />Профиль</a>
         <a href="#security"><Icon name="lock" />Безопасность</a>
         <a href="#privacy"><Icon name="shield" />Приватность</a>
+        <Link href="/family"><Icon name="user"/>Семья</Link>
+        {dashboard.user.role==="tutor"?<a href="#teaching"><Icon name="book"/>Преподавание</a>:null}
         <button type="button" className="danger-link" onClick={logout}>Выйти</button>
       </aside>
       <form id="profile" className="panel form-stack" onSubmit={save}>
         <h2>Профиль</h2>
         <div className="profile-editor"><span className="avatar profile-avatar">{dashboard.user.display_name.slice(0, 1)}</span><span><strong>{dashboard.user.display_name}</strong><small>{dashboard.user.role === "tutor" ? "Преподаватель" : "Ученик"}</small></span></div>
         <label>Имя<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} required /></label>
-        <label>Email<input value={dashboard.user.email} disabled /></label>
+        <label>Электронная почта<input value={dashboard.user.email} disabled /></label>
         <label>Часовой пояс<input value={timezone} onChange={(event) => setTimezone(event.target.value)} required /></label>
         <button type="submit">Сохранить изменения</button>
         {error ? <p className="field-error">{error}</p> : null}
@@ -52,9 +56,10 @@ export function SettingsPage() {
         <h2>Безопасность</h2>
         <p>Чтобы завершить сеанс на этом устройстве, выйдите из аккаунта.</p>
       </section>
+      {dashboard.user.role==="tutor"?<TeachingSettings/>:null}
       <section id="privacy" className="panel">
         <h2>Приватность</h2>
-        <p>Роль нельзя изменить как обычную настройку. Для смены роли нужен отдельный проверяемый процесс.</p>
+        <p>Роль аккаунта: {dashboard.user.role === "tutor" ? "преподаватель" : "ученик"}.</p>
         <a href="/privacy">Политика конфиденциальности</a>
       </section>
     </section>

@@ -4,20 +4,17 @@ export function BrandMark({ decorative = false }: { decorative?: boolean }) {
   return (
     <svg
       className={decorative ? "brand-symbol decorative" : "brand-symbol"}
-      viewBox="0 0 48 56"
+      viewBox="0 0 48 48"
       aria-hidden="true"
     >
       <path
-        d="M10 48V17C10 9.8 15.8 4 23 4h4c7.7 0 14 6.3 14 14s-6.3 14-14 14H18"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M18 7h12c8.3 0 14 5.1 14 12.5S38.3 32 30 32h-4v9h-8V7Zm8 7.5v10h4c3.9 0 6-1.8 6-5s-2.1-5-6-5h-4Z"
+        fill="currentColor"
+        fillRule="evenodd"
       />
       <path
         className="brand-symbol-accent"
-        d="M6 50V36c0-7.2 5.8-13 13-13h22v9H20c-2.8 0-5 2.2-5 5v13H6Z"
+        d="M4 12.5a1 1 0 0 1 1.4-.9l8.6 4V41l-8.8-4.1A2 2 0 0 1 4 35.1V12.5Z"
       />
     </svg>
   );

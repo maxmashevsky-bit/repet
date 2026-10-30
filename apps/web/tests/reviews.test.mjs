@@ -1,0 +1,9 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {parseReviewPlan,parseRewardSummary,parseRewardPreference,reviewGroups}from "../features/learning-reviews/model.ts";
+const id="12345678-1234-4234-8234-123456789abc",key="a".repeat(32),page=items=>({items,total:items.length,limit:20,offset:0});
+const item={source_run_id:id,lesson_id:id,exercise_id:id,topic_key:key,topic:"Дроби",subtopic:"",prompt:"1 + 1",status:"incorrect",clean_days:0,due_at:"2026-10-30T10:00:00Z"};
+const plan=()=>({server_time:"2026-10-30T12:00:00Z",due_total:1,mistake_total:1,unanswered:0,pending:1,weekly_completed:0,weekly_target:3,items:page([{...item}]),active:page([])});
+const rewards=()=>({enabled:true,xp:10,level:1,level_progress:10,level_target:100,weekly_xp:10,weekly_achievements:1,awards:page([{id,title:"Уверенное повторение",points:10,earned_at:"2026-10-30T10:00:00Z"}])});
+test("review plan validates pending isolation, root grants and grouped topics",()=>{const p=plan();assert.deepEqual(parseReviewPlan(p),p);for(const change of[v=>v.answer_key="secret",v=>v.items.items[0].status="needs_review",v=>v.items.items[0].source_run_id="not-a-grant",v=>v.pending=-1,v=>v.weekly_target=0]){const bad=plan();change(bad);assert.throws(()=>parseReviewPlan(bad));}assert.equal(reviewGroups([item,{...item,exercise_id:crypto.randomUUID()}]).length,1);});
+test("reward runtime rejects forged totals, guessed points and disabled awards",()=>{const r=rewards();assert.deepEqual(parseRewardSummary(r),r);for(const change of[v=>v.level=2,v=>v.weekly_xp=20,v=>v.awards.items[0].points=100,v=>v.enabled=false,v=>v.permissions=["admin"]]){const bad=rewards();change(bad);assert.throws(()=>parseRewardSummary(bad));}assert.deepEqual(parseRewardPreference({enabled:false,enabled_from:null,updated_at:null}),{enabled:false,enabled_from:null,updated_at:null});assert.throws(()=>parseRewardPreference({enabled:true,role:"admin"}));});

@@ -15,14 +15,16 @@ func (r Role) Valid() bool {
 }
 
 type User struct {
-	ID             string    `json:"id"`
-	OrganizationID string    `json:"organization_id"`
-	Email          string    `json:"email"`
-	DisplayName    string    `json:"display_name"`
-	Role           Role      `json:"role"`
-	Timezone       string    `json:"timezone"`
-	Locale         string    `json:"locale"`
-	CreatedAt      time.Time `json:"created_at"`
+	ID                        string    `json:"id"`
+	OrganizationID            string    `json:"organization_id"`
+	Email                     string    `json:"email"`
+	DisplayName               string    `json:"display_name"`
+	Role                      Role      `json:"role"`
+	Timezone                  string    `json:"timezone"`
+	Locale                    string    `json:"locale"`
+	CreatedAt                 time.Time `json:"created_at"`
+	EmailVerified             bool      `json:"email_verified"`
+	EmailVerificationRequired bool      `json:"email_verification_required"`
 }
 
 type Invitation struct {

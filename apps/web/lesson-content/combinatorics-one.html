@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#FAF7F2">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+CiAgPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iMTAiIGZpbGw9IiNmZmZkZmEiLz4KICA8cGF0aCBkPSJNMTggN2gxMmM4LjMgMCAxNCA1LjEgMTQgMTIuNVMzOC4zIDMyIDMwIDMyaC00djloLThWN1ptOCA3LjV2MTBoNGMzLjkgMCA2LTEuOCA2LTVzLTIuMS01LTYtNWgtNFoiIGZpbGw9IiMzZjc2NTkiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPgogIDxwYXRoIGQ9Ik00IDEyLjVhMSAxIDAgMCAxIDEuNC0uOWw4LjYgNFY0MWwtOC44LTQuMUEyIDIgMCAwIDEgNCAzNS4xVjEyLjVaIiBmaWxsPSIjZDU1ZjI3Ii8+Cjwvc3ZnPg==">
+<title>Репет · Комбинаторика–1 — интерактивный урок и 162 задачи</title>
+<style>
+
+/* РЕПЕТ — автономная тема интерфейса. Никаких внешних зависимостей. */
+:root {
+ --bg:#FAF7F2; --white:#FFFDFA; --ink:#2F2A24; --muted:#7A7168;
+ --green:#3F7659; --green-deep:#315F49; --greenbg:#EDF2EB;
+ --orange:#D55F27; --orangebg:#F9EDE4;
+ --red:#C76D62; --redbg:#FAEEEB;
+ --line:#E8E1D8; --soft:#F6F1E9;
+ --shadow:0 12px 32px rgba(59,51,38,.035);
+ --blue:var(--green); --violet:var(--green); --sky:var(--greenbg); --violetbg:var(--greenbg);
+ --rad:16px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Manrope,Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit}button{cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #D2A06C;outline-offset:3px}
+a{color:var(--green)}b,strong{font-weight:800}
+.layout{display:grid;grid-template-columns:258px minmax(0,1fr);min-height:100vh}
+.sidebar{position:sticky;top:0;height:100vh;padding:32px 19px 24px;background:var(--white);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow-y:auto}
+.brand{display:flex;align-items:center;gap:12px;padding:1px 11px 27px;margin-bottom:20px;border-bottom:1px solid var(--line)}
+.brand-mark{position:relative;flex:0 0 40px;height:40px;border-radius:12px;background:#EDF2EB;color:var(--green);display:grid;place-items:center;font-weight:900;font-size:24px;line-height:1;letter-spacing:-1.4px}
+.brand-mark:after{content:'';position:absolute;right:5px;top:5px;width:8px;height:8px;border-radius:50%;background:var(--orange);border:2px solid var(--white)}
+.brand-name{font-size:24px;line-height:1.05;font-weight:870;letter-spacing:-1.35px;color:var(--ink)}
+.brand-sub{color:var(--muted);font-size:10px;line-height:1.4;font-weight:700;letter-spacing:.075em;text-transform:uppercase;margin-top:5px}
+.nav-label{font-size:10px;text-transform:uppercase;letter-spacing:.14em;font-weight:800;color:#998F83;padding:0 12px;margin:10px 0 14px}
+.nav-wrap{display:flex;flex-direction:column;gap:6px}
+.nav-btn{width:100%;display:flex;gap:11px;align-items:center;padding:12px 11px;border:1px solid transparent;border-radius:10px;background:transparent;text-align:left;color:#615B52;font-size:13px;font-weight:700;line-height:1.4;transition:background .15s,color .15s,border-color .15s}
+.nav-btn:hover{background:#F7F4EE;color:var(--ink)}
+.nav-btn.active{background:var(--greenbg);color:var(--green-deep);border-color:#D8E5D8;font-weight:850}
+.nav-icon{flex-shrink:0;width:27px;height:27px;display:grid;place-items:center;border-radius:8px;font-size:16px;filter:saturate(.7)}
+.nav-btn.active .nav-icon{background:#DCE8DA;filter:none}
+.nav-count{margin-left:auto;flex-shrink:0;padding:2px 8px;background:#F3F0EB;border:1px solid var(--line);color:#7F7568;border-radius:7px;font-size:11px;font-weight:800}
+.nav-btn.active .nav-count{background:var(--white);border-color:#D8E5D8;color:var(--green)}
+.sidebar-bottom{margin-top:auto;padding:18px 17px 15px;background:#F6F2EB;border:1px solid var(--line);border-radius:14px}
+.tiny-caps{font-size:11px;color:var(--ink);font-weight:850;letter-spacing:.055em;text-transform:uppercase}
+.progress-track{height:7px;background:#E3DDD3;border-radius:30px;overflow:hidden;margin:12px 0 9px}
+.progress-fill{width:0;height:100%;background:var(--green);border-radius:30px;transition:width .3s}
+.progress-text{color:var(--muted);font-size:12px;line-height:1.5;font-weight:700}
+.resetbtn{color:#8D6F5D;background:transparent;border:0;padding:8px 0 0;text-align:left;font-size:11px;font-weight:750;text-decoration:underline;text-underline-offset:3px}
+.resetbtn:hover{color:#A54E29}
+.main{width:100%;max-width:1450px;min-width:0;margin:0 auto;padding:38px clamp(24px,4vw,66px) 90px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:22px;min-height:25px}
+.eyebrow{color:var(--green);font-size:11px;font-weight:850;letter-spacing:.105em;text-transform:uppercase;line-height:1.45}
+.pill{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--white);color:var(--muted);padding:7px 12px;font-size:11px;font-weight:740;border-radius:999px;line-height:1.4}
+.hero{isolation:isolate;position:relative;overflow:hidden;background:var(--white);border:1px solid var(--line);border-radius:20px;min-height:228px;padding:34px clamp(26px,3.4vw,47px);box-shadow:var(--shadow);margin:0 0 31px}
+.hero:before{content:'';position:absolute;right:-64px;top:-125px;width:400px;height:400px;border:1px solid #D9E3D8;border-radius:50%;pointer-events:none;z-index:-1}
+.hero:after{content:'';position:absolute;right:10px;top:-66px;width:240px;height:240px;border:40px solid #F0F4EB;border-radius:50%;pointer-events:none;z-index:-1;opacity:.8}
+.hero-topline{display:inline-flex;align-items:center;gap:8px;color:var(--orange);font-weight:850;font-size:11px;letter-spacing:.125em;text-transform:uppercase}
+.hero-topline:before{content:'';height:7px;width:7px;background:var(--orange);border-radius:50%}
+.hero h1{font-size:40px;line-height:1.15;letter-spacing:-1.75px;font-weight:860;margin:14px 0 12px;max-width:680px;color:var(--ink)}
+.hero h1 span{color:var(--orange)!important;opacity:1!important}
+.hero p{max-width:730px;color:var(--muted);font-size:15px;line-height:1.75;margin:0 0 22px}
+.hero-stats{display:flex;flex-wrap:wrap;gap:8px}
+.hero-stat{border:1px solid var(--line);background:#F9F6F0;color:#625B51;border-radius:9px;padding:7px 11px;font-size:11px;font-weight:780;line-height:1.55}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:17px;margin:27px 0 20px}
+.page-head h2{font-size:27px;line-height:1.24;letter-spacing:-.85px;margin:0 0 6px;font-weight:845}
+.page-head p{margin:0;color:var(--muted);font-size:14px;line-height:1.7}
+.card{background:var(--white);border:1px solid var(--line);border-radius:var(--rad);box-shadow:var(--shadow)}
+.lesson-shell{padding:29px}
+.lesson-top{display:flex;align-items:flex-start;justify-content:space-between;gap:13px;margin-bottom:19px}
+.lesson-num{color:var(--orange);font-size:11px;letter-spacing:.12em;font-weight:850;text-transform:uppercase}
+.lesson-title{font-size:27px;line-height:1.22;letter-spacing:-.8px;margin:7px 0 9px;font-weight:850}
+.lesson-intro{color:var(--muted);font-size:15px;margin:0;max-width:840px}
+.lesson-tabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+.lesson-tab{background:var(--white);border:1px solid var(--line);color:#686158;font-size:12px;font-weight:770;padding:9px 12px;border-radius:10px;transition:background .15s,color .15s}
+.lesson-tab:hover{background:#F6F3ED}
+.lesson-tab.active{color:var(--green-deep);background:var(--greenbg);border-color:#CBDECE}
+.concept-layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(260px,1fr);gap:15px;align-items:stretch}
+.stage{min-height:352px;position:relative;overflow:hidden;padding:26px;border-radius:14px;border:1px solid #E3E9DE;background:linear-gradient(135deg,#F3F6EF 0%,#F8F7F0 90%)}
+.stage:before{content:'';position:absolute;right:-88px;top:-125px;width:240px;height:240px;border:1px solid #DEE8DD;border-radius:50%;pointer-events:none}
+.stage h3{position:relative;margin:0 0 6px;font-size:18px;letter-spacing:-.45px;font-weight:845;color:var(--ink)}
+.stage p{position:relative;color:var(--muted);margin:0 0 16px;font-size:13px;line-height:1.7}
+.explanation{border:1px solid var(--line);border-radius:14px;background:#FFFDF9;padding:24px}
+.explanation h3{font-size:16px;margin:0 0 12px;letter-spacing:-.25px}
+.explanation p,.explanation li{font-size:13px;line-height:1.75;color:#665D51}
+.explanation ul{padding-left:19px;margin:11px 0}
+.formula{display:block;margin:15px 0;border-radius:11px;border:1px solid #D8E6D8;background:var(--greenbg);color:var(--green-deep);padding:15px 10px;text-align:center;font-size:clamp(16px,2vw,20px);font-weight:850;letter-spacing:-.25px}
+.key-idea{display:flex;align-items:flex-start;gap:10px;background:#FBF2E7;border:1px solid #EEDCC5;color:#81502D;padding:14px;border-radius:11px;margin:16px 0;font-size:13px;line-height:1.7;font-weight:680}
+.lab-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:13px 0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #DDD7CE;border-radius:10px;background:var(--white);color:#4D493F;padding:10px 13px;min-height:41px;line-height:1.35;font-size:12px;font-weight:810;text-align:center;transition:border-color .15s,background .15s,color .15s,transform .15s}
+.btn:hover:not(:disabled){background:#F3F0E9;border-color:#CFC8BD;transform:translateY(-1px)}
+.btn-primary{background:var(--green);border-color:var(--green);color:#fff}
+.btn-primary:hover:not(:disabled){background:var(--green-deep);border-color:var(--green-deep);color:#fff}
+.btn-green{background:#E7F0E7;border-color:#C9DFCE;color:var(--green-deep)}
+.btn-soft{background:#F4EEE5;border-color:#E3D6C8;color:#87552F}
+.lab-note{border-radius:10px;border:1px solid #DFE7DA;background:var(--white);color:#5D6658;min-height:48px;padding:12px 14px;font-size:13px;font-weight:680;line-height:1.65}
+.lab-note strong{color:var(--green-deep)}
+.counter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:15px 0}
+.counter{min-width:0;text-align:center;background:var(--white);border:1px solid #E0E6DD;border-radius:11px;padding:14px 7px}
+.counter b{font-size:25px;line-height:1.24;color:var(--green-deep);display:block;letter-spacing:-.8px}
+.counter small{font-size:10px;line-height:1.35;color:#857D6E;font-weight:840;letter-spacing:.02em;display:block;margin-top:4px}
+.number-strip{position:relative;display:flex;align-content:flex-start;flex-wrap:wrap;gap:7px;margin:21px 0 11px}
+.number-item{position:relative;flex:0 0 43px;height:46px;border:1px solid #CBCFC4;background:var(--white);border-radius:9px;display:grid;place-items:center;color:#756F64;font-size:14px;font-weight:830;transition:background .22s,border-color .22s,color .22s,transform .22s}
+.number-item.target{background:#F0F3EA;border-color:#B7C7B7;color:#416B4E}
+.number-item.lit{background:var(--green);border-color:var(--green);color:white;transform:translateY(-4px);box-shadow:0 6px 9px #3F765921;animation:bounce .32s both}
+.number-item.marked{border-color:#C4B795;background:#F6F0E2;color:#7D5B30}
+.number-item.endpoint{outline:2px solid #D99B5A;outline-offset:1px}
+.number-item .tick{position:absolute;bottom:-12px;width:2px;height:8px;background:#B1B6A7}
+.big-equation{color:var(--green-deep);font-size:25px;font-weight:880;text-align:center;min-height:42px;letter-spacing:-.55px;margin-top:21px}
+.big-equation .plus{color:var(--orange)}
+.log-visual{height:74px;display:flex;overflow:hidden;position:relative;background:#D7AC77;border:2px solid #926B49;border-radius:10px;box-shadow:inset 0 3px 10px #6D48251A;margin:22px 0}
+.wood-piece{min-width:0;flex:1;background:repeating-linear-gradient(173deg,#DCB787 0,#DCB787 8px,#CF9F68 9px,#E2BC8F 16px);border-left:4px double #8F6546;display:grid;place-items:center;font-size:16px;font-weight:830;color:#624329;animation:grow .26s both}
+.wood-piece:first-child{border-left:0}
+.wood-caption{font-size:11px;color:#846B50;text-align:center;font-weight:700}
+.floor-list{display:flex;align-items:flex-end;flex-wrap:wrap;gap:9px;min-height:125px}
+.floor-item{position:relative;min-width:35px;max-width:62px;flex:1;height:62px;border:1px solid #C6D3C6;border-radius:10px;background:var(--white);display:grid;place-items:center;color:#647261;font-weight:830}
+.floor-item.visited{background:var(--green);border-color:var(--green);color:#fff}
+.floor-item:first-child{background:#E3EFE3;border-color:#BDD4C2;color:var(--green-deep)}
+.floor-item:last-child{border-color:#D5A566}
+.floor-arrow{position:absolute;top:-26px;left:50%;transform:translateX(-50%);color:var(--green);font-size:14px}
+.mini-logs{display:grid;gap:12px;margin:15px 0}
+.mini-log-row{display:flex;align-items:center;gap:10px}
+.mini-log-row button{flex-shrink:0}
+.mini-log{display:flex;flex:1;min-height:40px;background:#DCAA72;border:2px solid #926B49;border-radius:8px;overflow:hidden}
+.mini-segment{flex:1;min-width:0;background:repeating-linear-gradient(177deg,#D5A470 0,#D5A470 6px,#E0B888 7px,#D9A874 14px);border-right:3px double #9F754E;display:grid;place-items:center;font-size:11px;font-weight:830;color:#6C4D30}
+.mini-segment:last-child{border:0}
+.day-row{display:grid;grid-template-columns:75px minmax(0,1fr) 105px;gap:10px;align-items:center;padding:10px;background:var(--white);border:1px solid #E3E6DD;border-radius:10px;margin:10px 0}
+.day-row b{font-size:12px;color:#70675B}
+.call-strip{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.phone{background:#F1F0E8;border:1px solid #E0DED3;border-radius:6px;font-size:15px;padding:3px}
+.donut{font-size:16px;animation:grow .3s both}
+.color-cut-row{display:flex;align-items:center;gap:11px;background:var(--white);padding:10px;border:1px solid #E5E5DD;border-radius:10px;margin:9px 0}
+.dot-set{display:flex;gap:5px;flex-wrap:wrap}
+.dot{width:17px;height:17px;display:inline-block;border-radius:50%;box-shadow:inset 0 0 0 2px #FFFFFF60}
+.dot.red{background:#C76D62}.dot.blue{background:#68889D}.dot.green{background:#5B9171}
+.rod{display:flex;align-items:stretch;gap:0;height:40px;background:linear-gradient(180deg,#F1D8A9,#CEA97C);border:2px solid #A78D6B;border-radius:11px;margin:18px 0}
+.rod-section{flex:1;min-width:0;display:grid;place-items:center;border-right:3px solid #9B7654;color:#886E4D;font-size:11px;font-weight:830}
+.rod-section:last-child{border:0}
+.micro-quiz{background:#FAF8F4;border:1px solid var(--line);border-radius:14px;margin-top:18px;padding:24px}
+.micro-heading{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--orange);font-weight:850}
+.micro-quiz h3{font-size:17px;line-height:1.6;font-weight:800;margin:11px 0 16px;color:var(--ink)}
+.answer-row{display:flex;align-items:stretch;gap:9px;flex-wrap:wrap}
+.answer-input{max-width:100%;width:135px;min-height:42px;background:#fff;border:1px solid #D5CEC4;color:var(--ink);border-radius:10px;padding:10px 12px;text-align:center;font-size:16px;font-weight:800;outline:none;font-variant-numeric:tabular-nums}
+.answer-input:focus{border-color:var(--green);box-shadow:0 0 0 3px #3F765921}
+.feedback{display:none;background:#F4F1EB;color:#60584C;padding:12px 14px;border-radius:10px;margin-top:13px;font-size:13px;line-height:1.7}
+.feedback.show{display:block}
+.feedback.good{background:#EDF5EE;border:1px solid #CFE2D1;color:#2F6545}
+.feedback.bad{background:var(--redbg);border:1px solid #E9CEC9;color:#984B45}
+.feedback.help{background:#F9F1E4;border:1px solid #ECDCC2;color:#7F5C37}
+.footer-nav{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-top:20px}
+.source-banner{border:1px solid #DDDCCA;border-radius:12px;background:#F7F5EB;padding:15px 19px;font-size:13px;color:#746B58;margin-bottom:20px;line-height:1.7}
+.source-banner strong{color:var(--green-deep)}
+.section-tools{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:16px 0 19px}
+.filter{border:1px solid var(--line);border-radius:10px;background:var(--white);color:var(--ink);min-height:43px;padding:9px 12px;font-size:13px;font-weight:750;max-width:100%}
+.stat-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.mini-stat{border:1px solid var(--line);border-radius:10px;padding:9px 13px;background:var(--white);color:var(--muted);font-size:12px;font-weight:720}
+.mini-stat strong{color:var(--green-deep);font-size:18px;font-weight:850;margin-right:6px}
+.problem-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.problem-card{min-width:0;display:flex;flex-direction:column;gap:12px;scroll-margin-top:22px;border:1px solid var(--line);border-radius:15px;background:var(--white);padding:22px;box-shadow:var(--shadow)}
+.problem-card.solved{background:#FCFFFB;border-color:#BDDAC2}
+.problem-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.problem-index{display:inline-flex;gap:7px;align-items:center;font-size:13px;color:var(--green-deep);font-weight:860;white-space:nowrap}
+.problem-label{background:#F5F1EA;color:#857C6F;font-size:10px;font-weight:770;line-height:1.4;border-radius:9px;padding:6px 9px;text-align:right}
+.problem-text{font-size:14px;line-height:1.75;color:var(--ink);font-weight:650;flex:1}
+.problem-card .answer-input{width:110px}
+.problem-card .answer-row{margin-top:4px}
+.problem-meta{color:#90877B;font-size:11px;font-weight:730;margin-top:1px}
+.details{margin-top:3px;border-top:1px dashed var(--line);padding-top:12px;color:var(--muted);font-size:13px}
+.details summary{cursor:pointer;color:var(--green);font-weight:800}
+.details p{margin:9px 0 0}
+.empty{padding:42px 22px;text-align:center;background:var(--white);border:1px solid var(--line);border-radius:14px;color:var(--muted)}
+.pagination{display:flex;justify-content:center;align-items:center;gap:8px;margin:22px 0;flex-wrap:wrap}
+.pagination .btn.active{background:var(--green);color:#fff;border-color:var(--green)}
+.rules-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:17px 0}
+.rule-card{border:1px solid var(--line);border-radius:15px;background:var(--white);padding:22px}
+.rule-card h3{font-size:17px;line-height:1.4;margin:0 0 9px;letter-spacing:-.3px}
+.rule-card p{font-size:13px;line-height:1.75;color:var(--muted);margin:0 0 9px}
+.rule-card code{display:block;white-space:normal;color:var(--green-deep);font-size:14px;font-weight:830;background:var(--greenbg);border-radius:9px;padding:10px 13px;margin:13px 0}
+.finish-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.finish-card{text-align:center;padding:24px}
+.finish-card strong{font-size:36px;letter-spacing:-1.4px;color:var(--green-deep);display:block;line-height:1.2}
+.finish-card span{font-size:12px;color:var(--muted);font-weight:770}
+.footnote{font-size:12px;line-height:1.8;color:var(--muted)}
+.lesson-completed{display:inline-flex;align-items:center;color:var(--green-deep);background:var(--greenbg);border:1px solid #D7E6D5;font-size:11px;font-weight:830;padding:7px 10px;border-radius:9px;white-space:nowrap}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.hidden{display:none!important}
+#printSheet{display:none}
+.toast{position:fixed;z-index:30;right:20px;bottom:20px;max-width:min(400px,calc(100vw - 36px));background:var(--green-deep);color:#fff;padding:12px 17px;border-radius:11px;font-size:13px;font-weight:760;box-shadow:0 10px 30px #2F58462A;opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .22s,transform .22s}
+.toast.show{opacity:1;transform:translateY(0)}
+@keyframes bounce{0%{transform:translateY(0) scale(.86)}60%{transform:translateY(-7px) scale(1.04)}100%{transform:translateY(-4px) scale(1)}}
+@keyframes grow{from{transform:scale(.65);opacity:0}to{transform:scale(1);opacity:1}}
+@media(max-width:1230px){.layout{grid-template-columns:225px minmax(0,1fr)}.main{padding:30px 26px 75px}.sidebar{padding:24px 13px}.concept-layout{grid-template-columns:1fr}.stage{min-height:290px}.problem-grid{grid-template-columns:1fr}.hero:before{right:-180px}}
+@media(max-width:780px){.layout{display:block}.sidebar{position:relative;top:auto;height:auto;overflow:visible;padding:14px 18px 8px;border-right:0;border-bottom:1px solid var(--line)}.brand{display:flex;margin:0;padding:0 0 12px;border-bottom:0}.brand-mark{width:36px;height:36px;flex-basis:36px;font-size:21px}.brand-name{font-size:21px}.brand-sub{font-size:9px}.nav-label,.sidebar-bottom{display:none}.nav-wrap{display:flex;flex-direction:row;gap:7px;overflow-x:auto;padding:3px 0 8px;scrollbar-width:thin}.nav-btn{flex:0 0 auto;width:auto;white-space:nowrap;padding:8px 10px;font-size:12px;gap:7px}.nav-icon{font-size:15px;width:23px;height:23px}.nav-count{display:none}.main{padding:22px 20px 60px}.topbar{margin-bottom:18px}.topbar .pill{display:none}.hero{min-height:0;padding:26px 25px}.hero h1{font-size:34px}.hero:after{opacity:.45}.hero-stat{font-size:10px}.page-head{align-items:flex-start}.page-head h2{font-size:25px}.lesson-shell{padding:21px}.lesson-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;padding-bottom:7px}.lesson-tab{flex-shrink:0}}
+@media(max-width:560px){body{font-size:15px}.main{padding:17px 12px 52px}.sidebar{padding:11px 12px 5px}.eyebrow{font-size:10px}.hero{padding:24px 20px;border-radius:16px;margin-bottom:25px}.hero h1{font-size:30px;line-height:1.19;letter-spacing:-1px}.hero p{font-size:14px}.hero-stats{gap:6px}.hero-stat{padding:6px 9px}.page-head{margin:24px 0 14px;flex-direction:column;gap:10px}.page-head h2{font-size:23px}.page-head p{font-size:13px}.lesson-shell{padding:16px}.lesson-title{font-size:22px}.lesson-intro{font-size:14px}.stage{min-height:245px;padding:16px;border-radius:12px}.stage h3{font-size:16px}.explanation{padding:17px}.explanation h3{font-size:15px}.counter-grid{gap:6px}.counter{padding:11px 4px}.counter b{font-size:21px}.counter small{font-size:9px}.number-item{flex-basis:37px;height:40px;font-size:12px}.micro-quiz{padding:17px}.micro-quiz h3{font-size:16px}.answer-input{width:105px}.btn{padding:10px 11px;min-height:41px}.day-row{grid-template-columns:1fr;gap:4px}.mini-log-row{flex-wrap:wrap}.mini-log-row .mini-log{min-width:140px}.section-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.section-tools .filter{width:100%}.section-tools .btn{width:100%}.problem-card{padding:17px}.problem-grid{gap:11px}.problem-label{font-size:9px;max-width:58%}.problem-text{font-size:14px}.rules-grid,.finish-grid{grid-template-columns:1fr}.rule-card{padding:19px}.footer-nav{align-items:stretch}.footer-nav .btn{flex:1}.floor-list{gap:5px}.floor-item{min-width:27px}.color-cut-row{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* =========================================================
+   РЕПЕТ — ИНТЕРФЕЙС ПОД ФИРМЕННЫЙ SVG icon.svg
+   Исходные три краски: #FFFDFA / #3F7659 / #D55F27
+   Сохранены неизменными условия задач и JS-логика.
+   ========================================================= */
+:root{
+  --bg:#FAF7F2;--white:#FFFDFA;--ink:#2F2A24;--muted:#7A7168;
+  --green:#3F7659;--green-deep:#315F49;--greenbg:#EDF2EB;
+  --orange:#D55F27;--orangebg:#F9EDE4;
+  --red:#C76D62;--redbg:#FAEEEB;
+  --line:#E8E1D8;--soft:#F6F1E9;
+  --shadow:0 7px 30px rgba(48,57,42,.035);
+  --rad:16px
+}
+body{font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;line-height:1.6}
+.layout{grid-template-columns:252px minmax(0,1fr)}
+.sidebar{padding:25px 15px;background:#FFFDFA;border-right:1px solid var(--line)}
+.brand{gap:11px;padding:0 7px 23px;margin-bottom:15px;align-items:center}
+.brand-mark{display:block;flex:0 0 49px;width:49px;height:49px;border-radius:10px;background:#FFFDFA;overflow:hidden;box-shadow:0 0 0 1px #E8E1D8;color:inherit;letter-spacing:normal}
+.brand-mark:after{display:none!important}
+.brand-mark svg{display:block;width:100%;height:100%}
+.brand-name{font-size:28px;font-weight:850;line-height:1;letter-spacing:-1.35px}
+.brand-sub{margin-top:7px;color:#877E71;letter-spacing:.13em;font-size:9px;font-weight:790}
+.nav-label{padding:0 14px;color:#958D80;letter-spacing:.15em;font-size:10px}
+.nav-btn{position:relative;min-height:53px;padding:12px 11px 12px 13px;border:1px solid transparent;border-radius:10px;gap:10px;font-size:12.5px;color:#5B5850}
+.nav-btn .nav-icon{width:29px;height:29px;flex:0 0 29px;border:1px solid #EAE6DE;border-radius:9px;background:#F8F5EE;color:#7A776D;filter:none}
+.nav-btn .nav-icon svg{display:block;width:17px;height:17px;stroke:currentColor}
+.nav-btn.active{border-color:#D8E6DA;background:#EDF2EB;color:var(--green-deep)}
+.nav-btn.active:before{content:'';position:absolute;left:0;top:12px;bottom:12px;width:3px;background:#D55F27;border-radius:0 3px 3px 0}
+.nav-btn.active .nav-icon{background:#FFFDFA;color:#3F7659;border-color:#D1E2D4}
+.nav-btn:hover:not(.active){background:#F8F6F0}
+.nav-count{font-size:10px;background:#F8F5F0}
+.sidebar-bottom{border-radius:12px;padding:17px 15px 14px;background:#F8F5EF}
+.sidebar-bottom:before{content:'';display:block;width:23px;height:3px;border-radius:5px;background:var(--orange);margin-bottom:12px}
+.progress-track{height:6px;background:#E1DED4}
+.progress-fill{background:var(--green)}
+.main{max-width:1480px;padding:31px clamp(24px,4vw,61px) 82px}
+.topbar{margin-bottom:20px;align-items:center}
+.topbar-context{display:flex;flex-direction:column;gap:6px}
+.crumbs{font-size:11px;color:#9C948A;line-height:1.3;font-weight:640}
+.crumbs span{padding:0 5px;color:#C6BDAF}
+.eyebrow{font-size:10px;color:#3F7659;letter-spacing:.115em;line-height:1.5}
+.offline-dot{width:7px;height:7px;border-radius:50%;background:#3F7659}
+.topbar .pill{border-radius:9px;font-weight:700;font-size:11px}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) 202px;gap:26px;padding:20px;min-height:276px;border-radius:16px;margin-bottom:28px;box-shadow:var(--shadow);background:#FFFDFA}
+.hero:before,.hero:after{display:none}
+.hero-main{min-width:0;padding:19px 0 18px 21px;display:flex;flex-direction:column;justify-content:center}
+.hero-topline{font-size:10px;letter-spacing:.14em;color:var(--orange)}
+.hero-topline:before{border-radius:1px;width:16px;height:3px;background:var(--orange)}
+.hero h1{font-size:40px;line-height:1.13;letter-spacing:-1.9px;margin:12px 0 13px;font-weight:860;max-width:700px}
+.hero p{max-width:680px;font-size:14px;line-height:1.7;margin:0 0 21px}
+.hero h1 span{color:#D55F27!important}
+.hero-stats{gap:0;display:flex;align-items:center;flex-wrap:wrap}
+.hero-stat{border:0;border-right:1px solid #DDDCD5;border-radius:0;background:transparent;color:#655E52;font-size:11px;font-weight:710;padding:2px 11px;white-space:normal}
+.hero-stat:first-child{padding-left:0}
+.hero-stat:last-child{border-right:0}
+.hero-identity{position:relative;min-height:235px;border-radius:12px;background:#3F7659;color:#FFFDFA;padding:17px 17px 15px;display:flex;flex-direction:column;overflow:hidden;justify-content:space-between}
+.hero-identity:before{content:'';position:absolute;right:-33px;top:29px;width:124px;height:124px;border:16px solid #FFFFFF12;border-radius:30px;transform:rotate(-8deg)}
+.hero-identity-top{position:relative;z-index:1;display:flex;gap:7px;align-items:center;font-size:9px;font-weight:780;letter-spacing:.065em;color:#E5F0E5}
+.hero-mini-line{background:#D55F27;width:14px;height:4px;border-radius:2px}
+.hero-emblem{position:relative;z-index:1;width:68px;height:68px;padding:0;border-radius:12px;background:#FFFDFA;box-shadow:0 5px 17px #223C3121}
+.hero-emblem svg{width:100%;height:100%;display:block}
+.hero-id-text{position:relative;z-index:1;font-size:19px;font-weight:690;letter-spacing:-.55px;line-height:1.2}
+.hero-id-text b{color:#F5BB95;font-weight:870}
+.hero-identity-bottom{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid #FFFFFF3B;color:#D6E7DB;font-size:10px;font-weight:790;letter-spacing:.1em}
+.hero-identity-bottom span:last-child{font-size:21px;line-height:1;color:#FFFDFA}
+.page-head{margin-top:25px;margin-bottom:17px}
+.page-head h2{font-size:27px;letter-spacing:-.85px}
+.page-head p{font-size:13.5px}
+.card,.problem-card,.rule-card{box-shadow:var(--shadow);border-radius:16px}
+.lesson-shell{padding:25px 27px 25px;border-top:3px solid var(--green)}
+.lesson-top{margin-bottom:18px}
+.lesson-num{color:var(--orange)}
+.lesson-title{font-size:28px}
+.lesson-tabs{gap:7px;margin-bottom:14px}
+.lesson-tab{border-radius:10px;padding:9px 12px;font-weight:750}
+.lesson-tab.active{background:#3F7659;border-color:#3F7659;color:#FFFDFA}
+.lesson-tab.active:hover{background:#315F49}
+.concept-layout{grid-template-columns:minmax(0,1.38fr) minmax(240px,.92fr);gap:14px}
+.stage{min-height:347px;background:#F4F6F0;border-color:#DEE8DF;border-radius:12px;padding:23px}
+.stage:before{display:none}
+.stage:after{content:'';position:absolute;left:0;top:0;width:32px;height:3px;background:#D55F27;border-radius:0 0 4px 0}
+.explanation{border-radius:12px;padding:23px;background:#FFFDF9}
+.formula{border-radius:10px}
+.key-idea{border-radius:10px;background:#FFF4EA;border-color:#EDD7C3}
+.btn,.filter,.answer-input{border-radius:10px}
+.btn{font-weight:760}
+.btn-primary{background:#3F7659;border-color:#3F7659;color:white}
+.btn-primary:hover:not(:disabled){background:#315F49;border-color:#315F49}
+.btn-soft{background:#FFF3EB;border-color:#EED8C7;color:#A54F27}
+.counter{border-radius:10px}
+.counter b{color:#3F7659}
+.micro-quiz{border-radius:12px;background:#FFFDFA;box-shadow:inset 4px 0 0 #D55F27;padding:22px 23px 22px 26px}
+.micro-heading{color:#B85325}
+.problem-card{border-top:3px solid #E2EDE4}
+.problem-card.solved{border-top-color:#3F7659}
+.problem-index{color:var(--green)}
+.problem-label{border-radius:8px}
+.rule-card{border-top:3px solid #E2EDE4}
+.rule-card:nth-child(4n + 2){border-top-color:#F3D9C7}
+.rule-card code{border-radius:9px}
+.source-banner{border-left:3px solid #D55F27}
+.finish-card{border-top:3px solid #3F7659}
+.finish-card strong{color:#3F7659}
+.feedback.bad{border-left:3px solid #C76D62}
+.feedback.good{border-left:3px solid #3F7659}
+.feedback.help{border-left:3px solid #D55F27}
+.toast{background:#315F49}
+@media(max-width:1230px){
+ .layout{grid-template-columns:220px minmax(0,1fr)}
+ .concept-layout{grid-template-columns:1fr}
+ .hero{grid-template-columns:minmax(0,1fr) 173px;gap:10px}
+ .hero-main{padding-left:12px}
+ .hero-identity{min-height:220px}
+ .hero h1{font-size:34px}
+}
+@media(max-width:780px){
+ .layout{display:block}
+ .main{padding:20px 19px 58px}
+ .sidebar{padding:12px 17px 7px}
+ .brand{padding:0 0 9px;margin:0}
+ .brand-mark{width:39px;height:39px;flex-basis:39px;border-radius:9px}
+ .brand-name{font-size:23px}
+ .nav-btn{min-height:41px;font-size:12px;padding:7px 10px;white-space:nowrap}
+ .nav-btn .nav-icon{width:24px;height:24px;flex-basis:24px;border:0;background:transparent}
+ .nav-btn.active .nav-icon{background:transparent;border:0}
+ .nav-btn.active:before{top:8px;bottom:8px}
+ .hero{grid-template-columns:minmax(0,1fr) 148px;gap:10px;padding:15px;min-height:230px}
+ .hero-main{padding:12px 5px 12px 10px}
+ .hero h1{font-size:32px}
+ .hero-identity{padding:13px;min-height:205px}
+ .hero-emblem{width:55px;height:55px}
+ .hero-id-text{font-size:16px}
+ .hero-stat{font-size:10px}
+ .lesson-shell{padding:20px}
+}
+@media(max-width:560px){
+ .main{padding:16px 12px 53px}
+ .sidebar{padding:10px 12px 5px}
+ .hero{display:flex;flex-direction:column;gap:12px;padding:20px;margin-bottom:23px;border-radius:13px}
+ .hero-main{padding:2px 1px 0}
+ .hero h1{font-size:30px}
+ .hero-stats{gap:5px}
+ .hero-stat{border:1px solid #E8E1D8;padding:5px 8px!important;border-radius:8px;background:#F8F6F1}
+ .hero-identity{min-height:90px;display:grid;grid-template-columns:48px 1fr;align-items:center;gap:5px 13px;padding:13px 15px}
+ .hero-identity-top,.hero-identity-bottom{display:none}
+ .hero-emblem{grid-column:1;width:46px;height:46px}
+ .hero-id-text{grid-column:2;display:flex;flex-wrap:wrap;gap:0 6px;font-size:15px}
+ .hero-id-text br{display:none}
+ .hero-id-text b{margin-left:0}
+ .brand-sub{font-size:8px}
+ .nav-wrap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;overflow:visible;padding:2px 0 8px}
+ .nav-btn{min-width:0;white-space:normal;width:100%;line-height:1.3;font-size:11px;gap:5px;padding:9px 7px}
+ .nav-btn .nav-icon{width:21px;height:21px;flex-basis:21px}
+ .nav-btn .nav-icon svg{width:16px;height:16px}
+ .crumbs{font-size:10px}
+ .page-head h2{font-size:24px}
+ .lesson-shell{padding:16px;border-top-width:3px}
+ .lesson-title{font-size:22px}
+ .stage{padding:16px}
+ .explanation{padding:16px}
+ .micro-quiz{padding:17px 15px 17px 19px}
+ .concept-layout{grid-template-columns:minmax(0,1fr)}
+}
+
+@media print{body{background:#fff;color:#000;font-family:Arial,sans-serif;font-size:11pt}.layout,.toast{display:none!important}#printSheet{display:block!important;padding:0 10mm}#printSheet h1{font-size:20pt;margin:0 0 6mm}#printSheet h2{font-size:14pt;margin-top:8mm}#printSheet .sheet-grid{display:grid;grid-template-columns:1fr 1fr;gap:7mm}#printSheet .sheet-item{break-inside:avoid;border-bottom:1px dotted #bbb;padding-bottom:8mm;margin-bottom:3mm}#printSheet .sheet-item strong{font-weight:bold}#printSheet .answerkey{break-before:page;font-size:10pt}#printSheet .answerkey p{line-height:1.9}#printSheet .sheet-meta{font-size:10pt;color:#444;margin-bottom:8mm}}
+
+
+/* ============================================================
+   РЕПЕТ — оформление рабочей области по предоставленному образцу
+   19 октября 2026. Только интерфейс: логика урока сохранена.
+   ============================================================ */
+:root {--bg:#FAF7F2; --white:#FFFDFA; --ink:#2F2A24; --muted:#7A7168;
+  --green:#3F7659; --green-deep:#315F49; --greenbg:#EDF2EB;
+  --orange:#D55F27; --line:#E8E1D8; --rad:16px;
+  --shadow:0 12px 34px rgba(57,48,33,.028)}
+body{font-family:Manrope,Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
+  line-height:1.67; background:var(--bg)}
+.sidebar{background:#FFFDFA}
+.brand-name{font-size:29px;letter-spacing:-1.25px}
+.brand-sub{font-size:10px;letter-spacing:.14em;color:#857969}
+.brand-mark{border-radius:12px}
+.nav-wrap{gap:9px}
+.nav-btn{border-radius:11px;transition:background-color .15s,border-color .15s;color:#5D584E}
+.nav-btn.active{background:#EDF2EB;border:1px solid #C6D9C7;color:#315F49;
+  outline:2px solid #CB9861;outline-offset:3px;box-shadow:inset 0 0 0 2px #FFFDFA}
+.nav-btn.active:before{background:#D55F27;left:0;top:13px;bottom:13px;width:4px;border-radius:1px 3px 3px 1px}
+.nav-btn.active .nav-icon{background:#FFFDFA;border-color:#D8E5D8}
+.nav-btn[data-view="learn"]>span:nth-child(2),.nav-btn[data-view="practice"]>span:nth-child(2){max-width:112px}
+.nav-btn:hover:not(.active){background:#F3F1EA;border-color:#E8E1D8}
+.sidebar-bottom{background:#F7F4EF;border-radius:13px}
+.progress-track{height:7px}
+.page-head h2{letter-spacing:-.85px;font-weight:850}
+.page-head p{color:#7A7168}
+.lesson-tabs{gap:8px}
+.lesson-tab{min-height:42px;padding:10px 13px;font-size:12px;background:#FFFDFA;border:1px solid #E8E1D8}
+.lesson-tab.active{background:#3F7659;border-color:#3F7659;color:#fff;box-shadow:0 2px 5px #315F4910}
+.lesson-tab:hover:not(.active){background:#F5F2EB;border-color:#D6CBBD}
+.lesson-shell{border:1px solid #E8E1D8;border-top:3px solid #3F7659;
+  border-radius:16px;box-shadow:0 15px 38px #392F2410}
+.lesson-num{font-size:11px;color:#D55F27;letter-spacing:.125em}
+.lesson-title{font-weight:855;letter-spacing:-.95px}
+.lesson-intro{color:#7A7168}
+.stage{background:#F3F6F0;border-color:#DCE7DC;border-radius:12px}
+.stage h3{font-size:18px;font-weight:840;letter-spacing:-.35px}
+.stage p{font-size:13.5px;line-height:1.75}
+.explanation{background:#FFFDFA;border:1px solid #E8E1D8;border-radius:12px}
+.explanation h3{font-weight:820}
+.formula{background:#EDF2EB;border:1px solid #D2E3D4;color:#315F49;
+  font-size:20px;font-weight:840;min-height:68px;display:flex;align-items:center;justify-content:center}
+.key-idea{background:#FFF4EA;border-color:#EDD6BE;color:#915029}
+.lab-note{background:#FFFDFA;border-color:#DFE5D9}
+.btn{min-height:43px;font-size:12px;font-weight:790}
+.btn-primary{background:#3F7659;border-color:#3F7659;color:#fff}
+.btn-primary:hover:not(:disabled){background:#315F49;border-color:#315F49}
+.counter{border:1px solid #E0E5DD;border-radius:10px;background:#FFFDFA}
+.counter b{font-size:27px;color:#3F7659}
+.counter small{font-size:10px;letter-spacing:.045em;color:#817869}
+.counter-grid{margin-top:18px;gap:9px}
+.log-visual{height:78px;margin-top:20px;margin-bottom:23px;border-radius:10px}
+.lab-controls{margin-top:15px;margin-bottom:14px}
+.micro-quiz{margin-top:19px;border:1px solid #E8E1D8;
+  box-shadow:inset 4px 0 0 #D55F27;border-radius:12px;background:#FFFDFA}
+.micro-heading{letter-spacing:.11em;color:#BC4F23}
+.micro-quiz h3{font-size:17px;letter-spacing:-.15px}
+.lesson-completed{background:#EDF2EB;border:1px solid #D5E4D5;color:#315F49;font-size:12px}
+.problem-card,.rule-card{background:#FFFDFA;border-color:#E8E1D8}
+.problem-card:hover,.rule-card:hover{border-color:#D9D3C7}
+.source-banner{background:#F9F7F1}
+::selection{background:#CFE2D1;color:#315F49}
+@media(min-width:1231px){
+  .layout{grid-template-columns:268px minmax(0,1fr)}
+  .sidebar{padding:26px 16px 26px}
+  .brand{gap:12px;padding:0 7px 24px;margin-bottom:18px}
+  .brand-mark{flex-basis:54px;width:54px;height:54px}
+  .brand-name{font-size:29px}
+  .nav-label{margin-top:10px;margin-bottom:13px}
+  .nav-btn{min-height:56px;padding:13px 12px 13px 13px;font-size:12.5px}
+  .nav-btn:first-child{min-height:64px}
+  .sidebar-bottom{padding:21px 16px 19px}
+  .main{max-width:1480px;padding:31px clamp(24px,4vw,61px) 82px}
+  .page-head{margin-bottom:18px}
+  .page-head h2{font-size:29px}
+  .lesson-tabs{margin-bottom:15px}
+  .lesson-shell{padding:29px}
+  .lesson-title{font-size:30px}
+  .concept-layout{grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr);gap:16px}
+  .stage{padding:25px;min-height:430px}
+  #view-learn:has([data-lesson="1"].active) .stage{min-height:504px}
+  .explanation{padding:25px}
+  .counter{padding:16px 8px}
+}
+@media(min-width:781px) and (max-width:1230px){
+  .sidebar{padding-top:25px}
+  .nav-btn.active{outline-offset:1px}
+  .stage{min-height:380px}
+  .concept-layout{grid-template-columns:1fr}
+  .lesson-shell{padding:25px}
+}
+@media(max-width:780px){
+  .sidebar{padding:12px 17px 8px}
+  .brand-mark{width:40px;height:40px;flex-basis:40px}
+  .brand-name{font-size:23px}
+  .brand-sub{font-size:8px}
+  .nav-btn{min-height:43px}
+  .nav-btn.active{outline:0;box-shadow:inset 0 0 0 1px #D4E2D6}
+  .nav-btn.active:before{top:8px;bottom:8px}
+  .concept-layout{grid-template-columns:1fr}
+  .stage{min-height:0}
+  .counter b{font-size:24px}
+  .log-visual{margin-top:20px}
+}
+@media(max-width:560px){
+  .sidebar{padding:11px 12px 5px}
+  .lesson-shell{padding:16px}
+  .stage{padding:16px}
+  .explanation{padding:16px}
+  .lesson-title{font-size:23px}
+  .lesson-tab{min-height:40px}
+  .btn{min-height:43px}
+  .counter-grid{gap:6px}
+  .counter{padding:12px 3px}
+  .counter b{font-size:21px}
+  .formula{min-height:60px;font-size:18px}
+}
+@media print{
+  .layout,.toast{display:none!important}
+  #printSheet{display:block!important}
+  .lesson-shell,.sidebar,.micro-quiz{box-shadow:none!important}
+}
+
+/* Дополнительные интерактивные элементы урока «Комбинаторика–1» */
+.lab-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:9px;margin:16px 0}
+.lab-tile,.choice-button,.digit-magnet,.number-pick,.cell-btn{border:1px solid #D7E2D7;background:#FFFDFA;color:#3E5F4B;border-radius:10px;min-height:45px;padding:9px;font-weight:800;transition:background .14s,border-color .14s,transform .14s}
+.lab-tile:hover,.choice-button:hover,.digit-magnet:hover,.number-pick:hover,.cell-btn:hover{border-color:#3F7659;background:#EDF2EB}
+.lab-tile.active,.choice-button.active,.digit-magnet.active,.number-pick.active,.cell-btn.active{background:#3F7659;color:#fff;border-color:#3F7659}
+.lab-tile:focus-visible,.choice-button:focus-visible,.digit-magnet:focus-visible,.number-pick:focus-visible,.cell-btn:focus-visible{outline:3px solid #DDA775;outline-offset:2px}
+.lab-tile strong{display:block;font-size:20px}.lab-tile small{display:block;font-size:11px;line-height:1.3;opacity:.82}
+.lab-note{padding:11px 13px;border:1px solid #DFE5D9;min-height:42px;border-radius:10px}
+.lab-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:12px 0}
+.lab-row-label{min-width:110px;color:#756D63;font-size:12px;font-weight:750}
+.lab-subtitle{color:#665D51;font-size:12px;font-weight:800;margin:16px 0 7px}
+.lab-selector{background:#FFFDFA;border:1px solid #DDE5D9;border-radius:9px;padding:8px 11px;color:#315F49;font-weight:800}
+.visual-caption{font-size:12px;color:#7A7168;margin:10px 0 0}
+.lab-matrix{display:grid;grid-template-columns:repeat(var(--cols,3),minmax(0,1fr));gap:6px;margin:14px 0;max-width:550px}
+.matrix-cell{min-width:0;min-height:50px;padding:7px 3px;border-radius:8px;border:2px solid transparent;font-size:11px;font-weight:850;display:grid;place-items:center;color:#2F2A24;line-height:1.3;white-space:normal}
+.matrix-cell.active{border-color:#D55F27;box-shadow:inset 0 0 0 1px #fff;outline:2px solid #D55F27;outline-offset:1px}
+.sample-options{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.choice-button{font-size:12px;min-height:40px}
+.lab-counters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0}
+.lab-counters>div{text-align:center;padding:13px 4px;background:#FFFDFA;border:1px solid #DFE5D9;border-radius:10px}
+.lab-counters b{display:block;color:#3F7659;font-size:24px}.lab-counters small{font-size:10px;color:#81786C;font-weight:750}
+.lab-stepper{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0}.lab-stepper label{font-size:12px;color:#6A6054;font-weight:750}.lab-stepper input{width:85px;max-width:100%;height:40px;border-radius:8px;border:1px solid #D9E1D4;padding:5px 9px;font-weight:800;background:#FFFDFA}
+.prediction{padding:11px 12px;background:#FFF4E9;border:1px solid #EBD5BE;border-radius:10px;margin:11px 0;font-size:13px;color:#7F5235}
+.prediction input{width:91px;border:1px solid #DBC5AE;border-radius:7px;padding:7px 9px;margin:4px 7px;background:white}
+.lab-computed{font-size:19px;font-weight:880;color:#315F49;background:#E5EFE4;border:1px solid #CFE1CF;border-radius:10px;padding:13px 10px;text-align:center;margin:13px 0}
+.board-8{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:2px;max-width:395px;padding:7px;background:#E9E4D9;border:1px solid #D5CFBF;border-radius:9px}
+.cell-btn{border-radius:3px;min-height:37px;padding:3px;color:#2F2A24}.cell-btn.dark{background:#D3B698}.cell-btn.light{background:#F7F0E3}.cell-btn.active{background:#3F7659;color:#fff;outline:2px solid #D55F27;outline-offset:-2px}
+.number-picks{display:flex;flex-wrap:wrap;gap:7px;margin:11px 0}.number-pick{min-width:41px;padding:8px}.number-pick.valid{border-color:#97BE9A;background:#E0F1E1;color:#315F49}
+.pair-visual{display:flex;align-items:center;justify-content:center;gap:12px;padding:14px;margin:12px 0;background:#FFFDFA;border-radius:10px;border:1px solid #DFE5D9}.pair-big{font-size:27px;color:#315F49;font-weight:900}.pair-list{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}.pair-list span{border:1px solid #DDE6DB;background:#FFFDFA;border-radius:7px;padding:5px 8px;font-size:12px;font-weight:700}.pair-list span.highlight{background:#DDEBDE;border-color:#3F7659}
+.digit-magnets{display:flex;gap:9px;margin:15px 0;flex-wrap:wrap}.digit-magnet{min-width:59px;min-height:65px;font-size:25px;background:#F8EBD9;border-color:#D9B58A;color:#79512C;box-shadow:0 3px 0 #D9BD9C}.digit-magnet.active{background:#D55F27;border-color:#B34C20;color:white;box-shadow:0 3px 0 #B34C20}
+.digit-display{letter-spacing:5px;text-align:center;font-size:32px;font-weight:900;padding:16px;background:#FFFDFA;border:1px dashed #D9C9B6;border-radius:10px;min-height:82px}
+.target-math{font-weight:850;color:#315F49}
+.problem-card{min-width:0}.problem-head{flex-wrap:wrap}.problem-text{white-space:pre-line}.problem-card .answer-row{align-items:center}
+.inline-select{padding:11px 12px;max-width:100%;min-width:160px;border:2px solid #DCE3D8;border-radius:10px;background:#FFFDFA;font-weight:750;color:#2F2A24}
+.mini-method{font-size:12px;color:#7A7168;padding-left:4px}.hint-level{font-size:12px;color:#BA582F;line-height:1.6;margin-top:9px}
+.homework-card{padding:22px;margin-top:16px}.homework-card .btn{margin-right:8px;margin-top:9px}.homework-card h3{margin:0 0 8px}
+#homework-preview{margin-top:18px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.hw-preview-item{background:#FFFDFB;border:1px solid #E8E1D8;border-radius:10px;padding:12px;font-size:13px}
+.teacher-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.teacher-section{padding:22px}.teacher-section h3{margin:0 0 14px}.teacher-section p,.teacher-section li{font-size:14px;color:#615A51;line-height:1.65}.teacher-section ol{padding-left:21px}.teacher-answer{padding:9px 0;border-top:1px solid #E8E1D8;font-size:13px}
+@media(max-width:1060px){.teacher-grid{grid-template-columns:1fr}.lab-grid{grid-template-columns:repeat(auto-fit,minmax(73px,1fr))}}
+@media(max-width:560px){.lab-matrix{gap:4px}.matrix-cell{min-height:43px;font-size:9px}.board-8{gap:1px}.cell-btn{min-height:28px;font-size:10px}.lab-counters b{font-size:19px}.lab-tile{font-size:12px}.teacher-section{padding:17px}.teacher-grid{gap:10px}#homework-preview{grid-template-columns:1fr}}
+@media(max-width:365px){.lab-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cell-btn{min-height:24px}}
+@media print{#printSheet{display:block!important} .sheet-item{padding-bottom:12mm!important;min-height:36mm} .sheet-grid{grid-template-columns:1fr 1fr!important;gap:8mm!important} .sheet-item{font-size:11pt;line-height:1.45}.answerkey{display:none!important}}
+
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar" aria-label="Навигация по уроку">
+  <div class="brand"><div class="brand-mark" aria-label="Логотип Репет"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <rect width="48" height="48" rx="10" fill="#fffdfa"/>
+  <path d="M18 7h12c8.3 0 14 5.1 14 12.5S38.3 32 30 32h-4v9h-8V7Zm8 7.5v10h4c3.9 0 6-1.8 6-5s-2.1-5-6-5h-4Z" fill="#3f7659" fill-rule="evenodd"/>
+  <path d="M4 12.5a1 1 0 0 1 1.4-.9l8.6 4V41l-8.8-4.1A2 2 0 0 1 4 35.1V12.5Z" fill="#d55f27"/>
+</svg></div><div><div class="brand-name">Репет</div><div class="brand-sub">УЧИСЬ ПОНИМАТЬ</div></div></div>
+  <div class="nav-label">Разделы</div>
+  <div class="nav-wrap">
+    <button type="button" class="nav-btn active" data-view="learn"><span class="nav-icon">✧</span><span>Урок с анимациями</span><span class="nav-count">8</span></button>
+    <button type="button" class="nav-btn" data-view="original"><span class="nav-icon">▤</span><span>8 задач из файла</span><span class="nav-count">8</span></button>
+    <button type="button" class="nav-btn" data-view="practice"><span class="nav-icon">☷</span><span>Большой тренажёр</span><span class="nav-count" id="nav-practice-count">162</span></button>
+    <button type="button" class="nav-btn" data-view="final"><span class="nav-icon">✓</span><span>Итоговая проверка</span><span class="nav-count">8</span></button>
+    <button type="button" class="nav-btn" data-view="rules"><span class="nav-icon">▣</span><span>Шпаргалка и ДЗ</span></button>
+    <button type="button" class="nav-btn" data-view="teacher"><span class="nav-icon">♙</span><span>Режим учителя</span></button>
+  </div>
+  <div class="sidebar-bottom"><div class="tiny-caps">Твой прогресс</div><div class="progress-track"><div class="progress-fill" id="side-progress" style="width:0%"></div></div><div class="progress-text" id="side-progress-text">0 задач решено</div><button class="resetbtn" type="button" id="reset-progress">Сбросить прогресс</button></div>
+</aside>
+<main class="main">
+  <div class="topbar"><div class="topbar-context"><span class="crumbs">Главное <span aria-hidden="true">/</span> Задания <span aria-hidden="true">/</span> Математика</span><span class="eyebrow" id="section-eyebrow">ОЛИМПИАДНАЯ МАТЕМАТИКА • 4–7 КЛАСС</span></div><span class="pill"><span class="offline-dot" aria-hidden="true"></span> Работает без интернета</span></div>
+  <header class="hero"><div class="hero-main"><div class="hero-topline">СЕРИЯ 11 / УЧИМСЯ ДУМАТЬ</div><h1>Комбинаторика — 1 <span style="color:#D55F27">↗</span></h1><p>Как посчитать все варианты, ничего не пропустить и не посчитать дважды? Исследуй, когда складывать, когда умножать и как разбирать случаи.</p><div class="hero-stats"><span class="hero-stat">8 интерактивных опытов</span><span class="hero-stat">8 задач из PDF</span><span class="hero-stat">162 задачи тренажёра</span><span class="hero-stat">Проверка и домашнее задание</span></div></div><div class="hero-identity" aria-hidden="true"><div class="hero-identity-top"><span class="hero-mini-line"></span><span>репет / математика</span></div><div class="hero-emblem"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <rect width="48" height="48" rx="10" fill="#fffdfa"/>
+  <path d="M18 7h12c8.3 0 14 5.1 14 12.5S38.3 32 30 32h-4v9h-8V7Zm8 7.5v10h4c3.9 0 6-1.8 6-5s-2.1-5-6-5h-4Z" fill="#3f7659" fill-rule="evenodd"/>
+  <path d="M4 12.5a1 1 0 0 1 1.4-.9l8.6 4V41l-8.8-4.1A2 2 0 0 1 4 35.1V12.5Z" fill="#d55f27"/>
+</svg></div><div class="hero-id-text"><span>Понимай.</span><br><span>Пробуй.</span><br><b>Решай.</b></div><div class="hero-identity-bottom"><span>11</span><span>+</span></div></div></header>
+  <section id="view-learn" class="view">
+    <div class="page-head"><div><h2>Сначала пойми — потом решай</h2><p>Выбирай опыт, предсказывай результат, нажимай на предметы и сравнивай свои выводы.</p></div><span class="pill" id="lesson-score">0 / 8 опытов пройдено</span></div>
+    <div class="lesson-tabs" id="lesson-tabs"></div>
+    <div class="card lesson-shell"><div class="lesson-top"><div><div class="lesson-num" id="lesson-num"></div><h2 class="lesson-title" id="lesson-title"></h2><p class="lesson-intro" id="lesson-intro"></p></div><span class="lesson-completed hidden" id="lesson-done">✓ Пройдено</span></div>
+      <div class="concept-layout"><div class="stage" id="lab-stage"></div><div class="explanation" id="lab-explanation"></div></div>
+      <div class="micro-quiz" id="lesson-quiz"></div>
+      <div class="footer-nav"><button class="btn" id="prev-lesson">← Предыдущий опыт</button><button class="btn btn-primary" id="next-lesson">Следующий опыт →</button></div>
+    </div>
+  </section>
+  <section id="view-original" class="view hidden">
+    <div class="page-head"><div><h2>Задачи из твоего PDF</h2><p>Все 8 исходных задач серии «Комбинаторика–1» в исходном порядке. Пробуй сам, затем проверяй.</p></div><span class="pill" id="original-score">0 из 8 решено</span></div>
+    <div class="source-banner"><strong>Источник:</strong> «Математический кружок “Школково”», 1-й год обучения, серия 11, «Комбинаторика–1», страницы 3–8. Для № 4 и № 5 предусмотрен выбор словами.</div>
+    <div class="problem-grid" id="original-list"></div>
+  </section>
+  <section id="view-practice" class="view hidden">
+    <div class="page-head"><div><h2>Большой тренажёр</h2><p>Новые задания от простых к олимпиадным. Нельзя угадывать правило по одному слову — сначала подумай, что считается.</p></div><span class="pill" id="practice-score">0 решено</span></div>
+    <div class="stat-row" id="practice-stats"></div>
+    <div class="section-tools"><label class="sr-only" for="topic-filter">Тема</label><select id="topic-filter" class="filter"></select><label class="sr-only" for="difficulty-filter">Сложность</label><select class="filter" id="difficulty-filter"><option value="all">Любая сложность</option><option value="1">Легко</option><option value="2">Средне</option><option value="3">Сложно</option></select><label class="sr-only" for="status-filter">Статус</label><select class="filter" id="status-filter"><option value="all">Все задания</option><option value="unsolved">Ещё не решены</option><option value="solved">Уже решены</option></select><button class="btn btn-soft" id="random-task" type="button">Случайный номер</button><button class="btn" id="print-tasks" type="button">Печать ДЗ</button></div>
+    <div class="source-banner">Вводи ответ без единиц измерения. При ошибке запись останется; сначала открой маленькую подсказку. Задачи с выбором ответа отмечены отдельно.</div>
+    <div class="problem-grid" id="practice-list"></div><div class="pagination" id="practice-pages"></div>
+  </section>
+  <section id="view-final" class="view hidden">
+    <div class="page-head"><div><h2>Итоговая самостоятельная</h2><p>8 новых условий. Сначала реши их без подсказок. После проверки можно разобрать ошибки.</p></div><span class="pill" id="final-score">0 из 8 решено</span></div>
+    <div class="source-banner"><strong>Проверь себя:</strong> запиши на бумаге, почему в каждой задаче используешь сложение, умножение или разбор случаев. Итог показывает отдельно ответы без помощи и с подсказками.</div>
+    <div class="problem-grid" id="final-list"></div>
+  </section>
+  <section id="view-rules" class="view hidden">
+    <div class="page-head"><div><h2>Шпаргалка и результаты</h2><p>Не запоминай действия наугад — объясни, что именно выбирается.</p></div></div>
+    <div class="finish-grid"><div class="card finish-card"><strong id="total-done">0</strong><span>всего заданий решено</span></div><div class="card finish-card"><strong id="own-done">0</strong><span>без подсказок</span></div><div class="card finish-card"><strong id="help-done">0</strong><span>с помощью</span></div></div>
+    <div class="rules-grid">
+      <article class="rule-card"><h3>Сложение: «или»</h3><p>Выбираем <b>один</b> предмет из непересекающихся категорий: печенье или пончик или пряник.</p><code>10 + 7 + 20 = 37</code><p>Категории не должны пересекаться, иначе посчитаем что-то дважды.</p></article>
+      <article class="rule-card"><h3>Умножение: «и затем»</h3><p>Делаем <b>два выбора</b>: цвет и вид блёсток. Для каждого цвета есть все варианты блёсток.</p><code>4 × 3 = 12</code><p>Нарисуй таблицу или дерево выбора.</p></article>
+      <article class="rule-card"><h3>Выбор без возвращения</h3><p>Если предмет забрали, второй раз его выбрать уже нельзя.</p><code>4 × 3 = 12</code><p>Два человека выбирают по одной из 4 разных конфет. Кто первый — важно.</p></article>
+      <article class="rule-card"><h3>Разобрать случаи</h3><p>Если количество способов второго выбора зависит от первого, раздели задачу на непересекающиеся случаи.</p><code>3 × 2 + 4 × 3 = 18</code><p>Печеньки отдельно, пряники отдельно.</p></article>
+      <article class="rule-card"><h3>Порядок важен?</h3><p>Если пара (2, 4) — то же, что (4, 2), нельзя считать эти два выбора разными.</p><code>Каждая пара — один раз</code><p>Зачёркивай уже проверенные сочетания.</p></article>
+      <article class="rule-card"><h3>Делимость произведения</h3><p>Чтобы произведение делилось на 6, в нём должны встретиться множители 2 и 3.</p><code>6 = 2 × 3</code><p>Исключай пересечения случаев, иначе задвоишь пары.</p></article>
+      <article class="rule-card"><h3>Числа из магнитиков</h3><p>Каждый магнитик используется не более одного раза, а число с двумя или тремя цифрами не начинается с нуля.</p><code>4 + 9 + 18 = 31</code><p>Исходная задача включает число 0.</p></article>
+      <article class="rule-card"><h3>Главный вопрос</h3><p>«Я выбираю что-то одно или выполняю цепочку действий? Есть ли повторы и запреты?»</p><code>Нарисуй и проверь малый случай</code><p>Хороший перебор полный и без повторений.</p></article>
+    </div>
+    <div class="card homework-card"><h3>Домашнее задание</h3><p>12 новых заданий для печати, без ответов и элементов интерфейса. Предусмотрено место для чертежей, таблиц и объяснений.</p><button type="button" class="btn btn-primary" id="print-homework">Распечатать только ДЗ</button><button type="button" class="btn" id="show-homework">Посмотреть задания</button><div id="homework-preview" class="hidden"></div></div>
+  </section>
+  <section id="view-teacher" class="view hidden">
+    <div class="page-head"><div><h2>Режим учителя</h2><p>План на 90 минут, ключи, вопросы, распространённые ошибки и методика объяснения.</p></div><button class="btn" id="print-teacher" type="button">Печать ДЗ для ученика</button></div>
+    <div class="teacher-grid">
+      <div class="card teacher-section"><h3>Маршрут занятия · 90 минут</h3><ol><li><b>0–10 мин:</b> разминка — перечислить варианты из двух маленьких категорий.</li><li><b>10–25 мин:</b> опыт 1–2 — «или» и запрет одного вида.</li><li><b>25–40 мин:</b> опыт 3–4 — таблица сочетаний и повторный выбор без возвращения.</li><li><b>40–55 мин:</b> опыт 5 — биекция клетки с парой «строка–столбец».</li><li><b>55–75 мин:</b> задачи № 1–5 из источника, остальные по готовности.</li><li><b>75–85 мин:</b> опыты 6–8 и первые задания тренажёра; сильному ученику — № 6–8.</li><li><b>85–90 мин:</b> короткая итоговая проверка + выбрать домашнюю работу.</li></ol><p class="footnote">Сложные исходные № 6–8 и часть тренажёра допускается оставить на второе занятие; за 90 минут без спешки решить весь банк невозможно.</p></div>
+      <div class="card teacher-section"><h3>Вопросы и педагогические подсказки</h3><p><b>Сумма или произведение?</b> «Ты берёшь один предмет из групп или составляешь пару из двух свойств?»</p><p><b>Таблица:</b> «Что означает одна клетка? Можно ли получить такой же вариант двумя клетками?»</p><p><b>Перебор пар:</b> «Если поменять числа местами, появится новый выбор?»</p><p><b>Магнитики:</b> «Можно ли поставить ноль первым? Можно ли взять магнитик два раза?»</p><p><b>Когда зависимость:</b> «После первого выбора осталось столько же вариантов или меньше?»</p></div>
+      <div class="card teacher-section"><h3>Частые ошибки</h3><p><b>37 вместо 210:</b> ученик складывает там, где нужно выбрать два независимых свойства. Покажи сетку.</p><p><b>Удвоенный ответ:</b> посчитаны пары (2,4) и (4,2) как разные. Попроси упорядочить меньший номер слева.</p><p><b>Повтор магнитика:</b> число 222 невозможно из одного магнитика «2».</p><p><b>Ведущий ноль:</b> запись 023 — это 23, а не новое трёхзначное число.</p><p><b>Пересекающиеся случаи:</b> пара с числом 6 может оказаться сразу в нескольких категориях. Выбирай исключающие случаи.</p></div>
+      <div class="card teacher-section"><h3>Ответы исходных заданий</h3><div id="teacher-answers"></div><p class="footnote">Для задач № 4 и № 5 проверяется выбор словами: «поровну» и «театр». Для № 8 число 0 учитывается как однозначное.</p></div>
+    </div>
+  </section>
+  <p class="footnote" style="margin:23px 5px 0">Основа: «Математический кружок “Школково”», серия 11, комбинаторика–1, 4–7 класс. Исходные примеры и задачи сохранены отдельно от дополнительных учебных материалов.</p>
+</main>
+</div>
+<div id="printSheet" aria-hidden="true"></div><div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const safe=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+const fmt=n=>Number(n).toLocaleString('ru-RU');
+const TOPICS=[['sum','Один из нескольких видов'],['ban','Запрещённый вид'],['product','Пары независимых свойств'],['same','Выбор без возвращения'],['board','Таблицы вариантов'],['pairs','Суммы и неповторяющиеся пары'],['div','Делимость произведения'],['digits','Числа из цифр'],['mixed','Нестандартный перебор']];
+const topicName=k=>TOPICS.find(t=>t[0]===k)?.[1]||k;
+const LESSONS=[
+{name:'Один предмет: складываем способы',short:'Сладости',intro:'Пример 1 из теории: Нюша берёт одну вкусняшку из разных видов. Она не собирает набор из трёх предметов.',check:'У Нюши 10 разных пряников, 7 печенек и 20 пончиков. Сколькими способами выбрать ОДНУ сладость?',answer:37,miniHint:'Три непересекающиеся группы: выбираем пряник ИЛИ печенье ИЛИ пончик.',miniSolution:'10 + 7 + 20 = 37. Каждый предмет свой, и выбирается только один.'},
+{name:'Другой вид: запрещаем одну категорию',short:'Другой вид',intro:'Пример 2: Нюша уже выбрала сладость, а Крош хочет взять предмет другого вида.',check:'Всего по 15 сладостей каждого из 3 видов. Нюша взяла пончик. Сколько разных сладостей остаётся на выбор Крошу другого вида?',answer:30,miniHint:'Крош может взять пряник или печенье. Пончики запрещены целиком.',miniSolution:'15 + 15 = 30. Выбор Нюши запрещает один вид, остальные виды не тронуты.'},
+{name:'Цвет И блёстки: строим таблицу',short:'Цвет и блёстки',intro:'Пример 3: Лосяш выбирает цвет шара, Совунья — форму блёсток. Каждая клетка таблицы — свой готовый шар.',check:'Есть 4 цвета и 3 вида блёсток. Сколько вариантов пары «цвет–блёстки»?',answer:12,miniHint:'К каждому цвету подходит каждый из 3 видов блёсток.',miniSolution:'4 × 3 = 12. Например, красный с сердечками — один отдельный вариант.'},
+{name:'Кто выбирает первым: пары без возврата',short:'Два выбора',intro:'Исходная задача № 3: первый человек берёт сладость, второй выбирает того же вида, но уже другую.',check:'Есть 3 разных печенья и 4 пряника. Нюша и Крош берут по одному предмету одного вида. Сколько пар выборов с учётом того, кто что взял?',answer:18,miniHint:'Отдельно два случая: оба печенья и оба пряники. Предметы не возвращаются.',miniSolution:'3 × 2 + 4 × 3 = 6 + 12 = 18. Пары (А,Б) и (Б,А) различаются между людьми.'},
+{name:'Строка и столбец — одна клетка',short:'Шахматная доска',intro:'Исходная задача № 4: выбор строки и столбца однозначно задаёт одну клетку — и наоборот.',check:'На доске 8 строк и 8 столбцов. Сколько клеток и столько же пар «строка–столбец»?',answer:64,miniHint:'На каждую из 8 строк приходится ровно 8 клеток.',miniSolution:'8 × 8 = 64. Соответствие взаимно однозначное.'},
+{name:'Суммы: перебор без двойного счёта',short:'Сумма кратна 6',intro:'Исходная задача № 6: из чисел 1–10 выбираем два разных, порядок НЕ важен.',check:'Сколько пар разных чисел из 1–10 имеют сумму, кратную 6? Пары (2,4) и (4,2) одинаковые.',answer:7,miniHint:'Проверяй суммы 6, 12, 18. Записывай только пары, где меньшее число слева.',miniSolution:'Сумма 6: 2 пары; сумма 12: 4 пары; сумма 18: 1 пара. Итого 7.'},
+{name:'Произведение: не пересчитай дважды',short:'Произведение',intro:'Исходная задача № 7: произведение пары должно делиться на 6, то есть содержать множители 2 и 3.',check:'Сколько неупорядоченных пар разных чисел из 1–10 дают произведение, делящееся на 6?',answer:17,miniHint:'Сначала пары с числом 6, а потом без 6 — так случаи не пересекаются.',miniSolution:'С числом 6 — 9 пар. Без него 3 или 9 с одним из 2, 4, 8, 10 — ещё 8. Всего 17.'},
+{name:'Числа из магнитиков: ноль и повторы',short:'Магнитные цифры',intro:'Исходная задача № 8: цифры 0, 2, 3 и 5 даны по одной. Можно взять 1–3 магнитика, а впереди многозначного числа ноль не ставим.',check:'Сколько различных чисел меньше 1000 можно составить из 0, 2, 3, 5 без повторения магнитиков, включая число 0?',answer:31,miniHint:'Разбей на однозначные, двузначные и трёхзначные. Не используй магнитик дважды.',miniSolution:'Однозначных 4, двузначных 9, трёхзначных 18: 4 + 9 + 18 = 31.'}
+];
+// Все восемь исходных условий сохранены, ответы из решения источника.
+const ORIGINAL=[
+{id:'o-1',num:1,topic:'ban',level:1,text:'У Ника в шкафу висит 100 различных рубашек. Каждый день он выбирает одну новую рубашку, а старую выкидывает. Сколько способов выбрать рубашку есть у Ника на пятый день?',answer:96,hints:['Сколько рубашек выброшено за первые четыре дня?','На пятый день доступны все первоначальные рубашки, кроме четырёх выкинутых.'],solution:'100 − 4 = 96. К началу пятого дня выкинуты рубашки первых четырёх дней.'},
+{id:'o-2',num:2,topic:'product',level:1,text:'Лосяш выбирает себе мебель для своего рабочего кабинета. Он рассматривает 5 различных письменных столов и 7 различных видов стульев. Сколько всего различных вариантов оформить кабинет есть у Лосяша?',answer:35,hints:['Один вариант — пара «стол + вид стульев».','У каждого из 5 столов есть все 7 вариантов стульев.'],solution:'5 × 7 = 35 пар. Каждой паре соответствует одна клетка таблицы 5 × 7.'},
+{id:'o-3',num:3,topic:'same',level:2,text:'Перед Крошем и Нюшей лежат 3 различных печеньки и 4 различных пряничка. Сначала Нюша выбирает одну из сладостей, а после этого Крош выбирает сладость того же вида, которую только что взяла Нюша. Сколькими способами Нюша и Крош могут выбрать себе пару сладостей?',answer:18,hints:['Сначала отдельно посчитай случай с печеньем и случай с пряниками.','Печенье: 3 × 2, пряники: 4 × 3. Эти случаи нужно сложить.'],solution:'3 × 2 + 4 × 3 = 6 + 12 = 18. Выборы людей различаются по ролям, повторить взятый предмет нельзя.'},
+{id:'o-4',num:4,topic:'board',level:2,kind:'choice',choices:[['same','Поровну'],['ny','Больше у Нюши'],['kr','Больше у Кроша']],text:'На холодильнике Совуньи висит магнитная шахматная доска 8 × 8. Нюша хочет посчитать количество способов выбрать строку и столбец, а Крош — количество способов выбрать одну клетку этой доски. У кого количество способов получится больше?',answer:'same',hints:['Что соответствует каждой паре «строка–столбец»?','И пар, и клеток ровно 8 × 8 = 64.'],solution:'Поровну. У обоих по 8 × 8 = 64 способа. Каждой паре строки и столбца соответствует ровно одна клетка.'},
+{id:'o-5',num:5,topic:'ban',level:2,kind:'choice',choices:[['theatre','В театр'],['cinema','В кино'],['circus','В цирк']],text:'Перед Кар-Карычем и Совуньей лежат 5 билетов на разные спектакли в театр, 7 билетов на разные показы фильмов в кино, а также 9 билетов на разные представления в цирк. Сначала Кар-Карыч выбирает себе один из билетов, после чего Совунья, чтобы показать свою индивидуальность, выбирает билет в другое место, не в то, которое выбрал Кар-Карыч. Кар-Карыч хорошо осведомлен о такой особенности своей подруги, и хочет предоставить ей выбор из самого большого числа вариантов. Куда ему надо взять билет?',answer:'theatre',hints:['Кар-Карыч исключает целую категорию. Какую лучше исключить?','Если взять театр, Совунье останется 7 + 9 = 16. Если кино — 14, если цирк — 12.'],solution:'В театр. Тогда Совунье остаются 7 + 9 = 16 билетов — максимальное число вариантов.'},
+{id:'o-6',num:6,topic:'pairs',level:3,text:'Ник выписал на доску числа 1, 2, 3, . . . , 10, и хочет выбрать из них два, сумма которых делится на 6. Сколькими способами он сможет их выбрать? Считается, что пары (2, 4) и (4, 2) — одинаковые.',answer:7,hints:['Порядок не важен, поэтому перебирай пары (a,b) только при a < b.','Возможные суммы: 6, 12, 18; соответствующих пар 2, 4, 1.'],solution:'Сумма 6: (1,5),(2,4); сумма 12: (2,10),(3,9),(4,8),(5,7); сумма 18: (8,10). Всего 2 + 4 + 1 = 7.'},
+{id:'o-7',num:7,topic:'div',level:3,text:'Джуди выписала на доску числа 1, 2, 3, . . . , 10, и хочет выбрать из них два, произведение которых делится на 6. Сколькими способами она может это сделать? Считается, что пары (2, 3) и (3, 2) — одинаковые.',answer:17,hints:['Произведение кратно 6, когда в нём есть множители 2 и 3.','С числом 6 — 9 пар. Без него 3 или 9 с одним из 2,4,8,10 — 8 пар.'],solution:'С числом 6: 9 вариантов. Без 6: 3 и 9 по 4 разных чётных партнёра, то есть 8. Всего 9 + 8 = 17. Случаи не пересекаются.'},
+{id:'o-8',num:8,topic:'digits',level:3,text:'У мисс Барашкис есть 4 магнитика с цифрами 0, 2, 3 и 5. Сколько различных чисел, меньших 1000, она может из них составить? Использовать все магнитики не обязательно.',answer:31,hints:['Делим варианты по количеству цифр — 1, 2 или 3. Число 0 тоже подходит.','Однозначных 4, двузначных 9, трёхзначных 18. Нельзя повторять магнитик и начинать многозначное число с нуля.'],solution:'4 однозначных числа (включая 0), 9 двузначных и 18 трёхзначных: 4 + 9 + 18 = 31.'}
+];
+function allPairs(n,pred){const pairs=[];for(let a=1;a<=n;a++)for(let b=a+1;b<=n;b++)if(pred(a,b))pairs.push([a,b]);return pairs}
+function numbersFromDigits(ds,maxLen=3){const ans=new Set();const used=[];function dfs(){if(used.length>=1&&used.length<=maxLen&&(used.length===1||used[0]!==0))ans.add(Number(used.join('')));if(used.length>=maxLen)return;for(const x of ds){if(used.includes(x)||used.length===0&&x===0&&maxLen===0)continue;used.push(x);dfs();used.pop()}}dfs();return [...ans].sort((a,b)=>a-b)}
+const PRACTICE=[];
+function addTask(topic,level,text,answer,hints,solution,kind='number',choices=null){let num=PRACTICE.length+1;PRACTICE.push({id:'p-'+num,num,topic,level,text,answer,hints,solution,kind,choices})}
+const goods=['пирожных','разных наклеек','книг','карандашей','игрушек'];
+function makePractice(){
+// 1. 20 задач на альтернативы, пять разных сюжетов.
+for(let i=0;i<20;i++){const a=3+i%13,b=4+(i*3)%14,c=2+(i*7)%12,t=i%5,lab=goods[i%5];let text=t===0?`В коробке ${a} разных пряников, ${b} разных печенек и ${c} разных пончиков. Сколькими способами можно взять одну сладость?`:t===1?`На выставке ${a} пейзажей, ${b} портретов и ${c} натюрмортов. Сколькими способами выбрать одну картину?`:t===2?`На полке три непересекающиеся группы ${lab}: ${a}, ${b} и ${c} предметов. Сколько способов выбрать один предмет?`:t===3?`Для подарка можно выбрать одну из ${a} открыток, одну из ${b} книг ИЛИ одну из ${c} игрушек. Сколько вариантов выбрать только один подарок?`:`В игре есть ${a} разных зелёных карт, ${b} жёлтых и ${c} красных. Сколькими способами выбрать одну карту?`;addTask('sum',i<7?1:i<15?2:3,text,a+b+c,[`Выбираем что-то одно из трёх разных групп.`,`Сложи ${a}, ${b}, ${c}.`],`${a} + ${b} + ${c} = ${a+b+c}.`)}
+// 2. 20 задач на условие другого типа, 4 варианта.
+for(let i=0;i<20;i++){const a=4+i%14,b=6+(i*5)%13,c=3+(i*7)%18,k=i%3,counts=[a,b,c],left=counts.reduce((x,y)=>x+y,0)-counts[k],place=['театр','кино','цирк'],t=i%4;let text=t===0?`Есть ${a} разных театральных, ${b} кино- и ${c} цирковых билетов. Первый ребёнок выбрал билет в ${place[k]}. Сколько билетов другого вида сможет выбрать второй ребёнок?`:t===1?`В магазине ${a} красных, ${b} синих и ${c} зелёных разных значков. Первый взял один ${['красный','синий','зелёный'][k]}. Второй должен взять значок другого цвета. Сколько вариантов?`:t===2?`На столе ${a} разных булочек, ${b} печений и ${c} пончиков. Первый выбрал ${['булочку','печенье','пончик'][k]}. Второй выбирает сладость иного вида. Сколько способов?`:`В коробке ${a} фигур типа А, ${b} типа Б и ${c} типа В. После того как игрок выбрал тип ${['А','Б','В'][k]}, друг может взять один предмет только другого типа. Сколько вариантов?`;addTask('ban',i<7?1:i<15?2:3,text,left,['Нельзя брать предмет того же вида, что у первого игрока.',`Всего ${a+b+c}, но вид с ${counts[k]} предметами исключён.`],`${a} + ${b} + ${c} − ${counts[k]} = ${left}.`)}
+// 3. 20 независимых пар, 4 сюжета.
+for(let i=0;i<20;i++){const a=2+i%12,b=2+(i*3)%10,t=i%5,txt=t===0?`Для шара выбирают один из ${a} цветов и один из ${b} видов блёсток. Сколько разных украшенных шаров получится?`:t===1?`Есть ${a} разных столов и ${b} видов стульев. Сколько оформлений из одного стола и одного вида стульев?`:t===2?`Ребёнок выбирает одну из ${a} футболок и одни из ${b} брюк. Сколько комплектов?`:t===3?`В кафе ${a} вида первых блюд и ${b} вида напитков. Сколько пар «блюдо + напиток»?`:`Придумывают пароль из одного из ${a} символов первой группы и одного из ${b} символов второй группы. Сколько двухсимвольных пар?`;addTask('product',i<7?1:i<15?2:3,txt,a*b,['Сначала выбирается один элемент первой группы, затем один элемент второй.','Для каждого первого выбора доступны все варианты второго.'],`${a} × ${b} = ${a*b}.`)}
+// 4. 20 двухшаговых/зависимых выбора, иногда сумма случаев.
+for(let i=0;i<20;i++){let a=3+i%8,b=3+(i*5)%9,t=i%4,ans,txt,sol;if(t===0){ans=a*(a-1);txt=`Есть ${a} разных жетонов. Один берёт Нюша, другой (оставшийся) — Крош. Сколько пар «жетон Нюши; жетон Кроша» возможно?`;sol=`${a} × (${a} − 1) = ${ans}.`}else if(t===1){ans=a*(a-1)+b*(b-1);txt=`В коробке ${a} разных печений и ${b} разных пряников. Два человека берут по одной сладости ОДНОГО вида, сначала первый, потом второй. Сколько вариантов?`;sol=`${a} × (${a} − 1) + ${b} × (${b} − 1) = ${ans}.`}else if(t===2){ans=a*b;txt=`Первый ученик выбирает один из ${a} фломастеров, второй — одну из ${b} линеек. Сколько упорядоченных пар предметов?`;sol=`${a} × ${b} = ${ans}.`}else{ans=a*(a-1);txt=`В соревновании из ${a} разных участников выбирают победителя и призёра (один человек не может занять оба места). Сколько результатов для первых двух мест?`;sol=`${a} × (${a} − 1) = ${ans}.`}addTask('same',i<6?1:i<15?2:3,txt,ans,['Уточни, может ли второй выбрать уже взятое первым?','Если два человека берут предметы одного вида, второго предмета становится на 1 меньше.'],sol)}
+// 5. 20 таблиц и биекций.
+for(let i=0;i<20;i++){const a=3+i%11,b=3+(i*3)%10,t=i%4,ans=a*b,txt=t===0?`На доске ${a} строк и ${b} столбцов. Сколько клеток?`:t===1?`Можно выбрать одну из ${a} строк и один из ${b} столбцов. Сколькими способами выбрать такую пару?`:t===2?`В таблице ${a} строк и ${b} столбцов. Каждую клетку помечают ровно одной парой номера строки и столбца. Сколько разных пар получится?`:`На плане города ${a} улиц одного направления пересекают ${b} улиц другого. Каждая пара пересекается ровно один раз. Сколько перекрёстков?`;addTask('board',i<7?1:i<15?2:3,txt,ans,['Одна клетка — это одна пара «строка, столбец».',`Для каждой из ${a} строк есть ${b} вариантов столбца.`],`${a} × ${b} = ${ans}.`)}
+// 6. 20 неупорядоченных пар, делимость суммы, разные n и m.
+for(let i=0;i<20;i++){const n=7+i%12,mod=3+i%7,pairs=allPairs(n,(a,b)=>(a+b)%mod===0),t=i%4;const txt=t===0?`Из чисел 1–${n} выбирают два разных числа. Сколько неупорядоченных пар дают сумму, кратную ${mod}?`:t===1?`На карточках числа от 1 до ${n}. Сколько пар без повторений можно составить так, чтобы сумма делилась на ${mod}? Порядок не важен.`:t===2?`У Ника карточки с числами 1, 2, …, ${n}. Он берёт две карточки одновременно. У скольких пар сумма делится на ${mod}?`:`Среди разных чисел от 1 до ${n} найди количество пар (a,b) с a < b и (a+b), делящимся на ${mod}.`;addTask('pairs',i<5?2:3,txt,pairs.length,['Рассматривай только пары a < b, чтобы не было повторений.',`Можно группировать пары по суммам, кратным ${mod}.`],`Подходят ${pairs.length} пар: ${pairs.map(x=>'('+x.join(', ')+')').join(', ')||'ни одной'}.`)}
+// 7. 20 неупорядоченных пар, делимость произведения.
+for(let i=0;i<20;i++){const n=7+i%12,mod=[6,10,12,4,15][i%5],pairs=allPairs(n,(a,b)=>(a*b)%mod===0),t=i%4,txt=t===0?`Сколько неупорядоченных пар различных чисел от 1 до ${n} имеют произведение, делящееся на ${mod}?`:t===1?`Джуди выписала числа от 1 до ${n}. Она выбирает два разных. Сколько способов получить произведение, кратное ${mod}, если порядок не важен?`:t===2?`На карточках от 1 до ${n} выбирают две разные. Сколькими способами можно выбрать пару, произведение которой делится на ${mod}?`:`Найди количество пар a < b, где 1 ≤ a < b ≤ ${n}, а произведение a × b делится на ${mod}.`;addTask('div',i<5?2:3,txt,pairs.length,['Чтобы не повторять пары, перебирай a < b.',`Для каждого a проверь, какие b делают произведение кратным ${mod}.`],`Всего ${pairs.length} пар: ${pairs.map(x=>'('+x.join(', ')+')').join(', ')||'ни одной'}.`)}
+// 8. 20 задач с магнитиками без повторений и с ограничением на длину.
+const sets=[[0,1,2],[0,2,5],[1,3,5],[0,3,7,9],[0,2,3,5],[1,2,4,7],[0,1,4,8],[2,4,6,8],[0,1,3,5,7],[0,2,4,5]];
+for(let i=0;i<20;i++){const ds=sets[i%sets.length],maxLen= i%3===0?2:3,all=numbersFromDigits(ds,maxLen),lim=maxLen===2?100:1000,txt=`Есть магнитики с цифрами ${ds.join(', ')} — каждого по одному. Сколько различных чисел меньше ${lim} можно составить, используя от 1 до ${maxLen} магнитиков? Цифры не повторяй, многозначное число не начинай с 0${ds.includes(0)?'; число 0 тоже считается':''}.`;const lengths={};for(const x of all){const l=String(x).length;lengths[l]=(lengths[l]||0)+1}addTask('digits',i<5?2:3,txt,all.length,['Сначала отдели однозначные, двузначные и, если нужно, трёхзначные числа.','В десятках/сотнях ноль не ставится первым; цифра-магнитик используется один раз.'],`${Object.entries(lengths).map(([k,v])=>`${k}-значных: ${v}`).join('; ')}. Всего ${all.length}.`)}
+// 9. Два различных олимпиадных мини-сюжета, всего ровно 162 задания.
+addTask('mixed',3,'Есть 6 разных билетов в театр, 8 — в кино, 12 — в цирк. Первый человек берёт один билет, второй хочет билет в другое место. Куда должен пойти первый, чтобы у второго было больше всего вариантов?', 'theatre',['Первый своим выбором исключает целую категорию.','Для наибольшего выбора у второго исключи самую маленькую категорию (6).'],'В театр: у второго остаются 8 + 12 = 20 вариантов.','choice',[['theatre','В театр'],['cinema','В кино'],['circus','В цирк']]);
+addTask('mixed',3,'Из 7 разных карточек выбирают две без возвращения. Пара не зависит от порядка. Сколько различных неупорядоченных пар получится?',21,['Первый выбор — 7, второй — 6. Но каждую пару ты посчитал дважды.','Подели число упорядоченных пар 7 × 6 на 2.'],'7 × 6 : 2 = 21 неупорядоченная пара.');
+}
+makePractice();
+const FINALS=[
+{id:'f-1',num:1,topic:'sum',level:1,text:'В музее 9 картин природы, 13 портретов и 8 натюрмортов. Сколькими способами выбрать одну картину?',answer:30,hints:['Выбирается одна работа из трёх разных групп.','9 + 13 + 8.'],solution:'9 + 13 + 8 = 30.'},
+{id:'f-2',num:2,topic:'product',level:1,text:'Для открытки выбирают один из 6 цветов бумаги и один из 4 рисунков. Сколько разных открыток?',answer:24,hints:['Два независимых действия.','К каждому из 6 цветов есть все 4 рисунка.'],solution:'6 × 4 = 24.'},
+{id:'f-3',num:3,topic:'ban',level:2,text:'Есть 8 видов чайных пакетиков, 11 кофе и 9 какао. Один человек выбрал какао. Другой должен выбрать один напиток другого вида. Сколько способов?',answer:19,hints:['Какао исключено целиком.','Остаются 8 + 11.'],solution:'8 + 11 = 19.'},
+{id:'f-4',num:4,topic:'same',level:2,text:'На столе 4 разные печеньки и 5 разных конфет. Два человека должны взять по одной сладости одного вида, не повторяя предмет. Сколько упорядоченных вариантов?',answer:32,hints:['Считай случаи по видам.','Печеньки: 4 × 3, конфеты: 5 × 4.'],solution:'4 × 3 + 5 × 4 = 12 + 20 = 32.'},
+{id:'f-5',num:5,topic:'board',level:1,text:'На сетке 7 строк и 9 столбцов. Сколько пар «строка–столбец»?',answer:63,hints:['Каждая пара определяет клетку.','7 × 9.'],solution:'7 × 9 = 63.'},
+{id:'f-6',num:6,topic:'pairs',level:3,text:'Из различных чисел от 1 до 8 выбирают два без учёта порядка. В скольких парах сумма делится на 5?',answer:6,hints:['Пары записывай только при a < b.','Подходят суммы 5, 10 и 15.'],solution:'Подходят (1,4),(2,3),(2,8),(3,7),(4,6),(7,8) — всего 6.'},
+{id:'f-7',num:7,topic:'div',level:3,text:'Из чисел 1–8 выбирают пару разных чисел без учёта порядка. Сколько пар с произведением, кратным 6?',answer:10,hints:['Проверь пары a < b.','С числом 6 — 7 пар; без него — ещё 3: (2,3),(3,4),(3,8).'],solution:'7 пар с числом 6 и три пары без него: (2,3),(3,4),(3,8). Итого 10.'},
+{id:'f-8',num:8,topic:'digits',level:3,text:'Есть три магнитика с цифрами 0, 4, 7. Сколько чисел меньше 1000 можно составить без повторения цифр, если разрешено брать 1–3 магнитика? Считай и ноль.',answer:11,hints:['Однозначных 3. Двузначных и трёхзначных сколько?','Двузначных: 2 × 2 = 4. Трёхзначных: 2 × 2 = 4.'],solution:'3 + 4 + 4 = 11.'}
+];
+const HOMEWORK=[
+'Из 12 книг о животных, 9 о космосе и 7 о природе выбирают одну. Сколько способов?',
+'У Лосяша 6 письменных столов и 8 видов стульев. Сколько способов выбрать комплект?',
+'Выбирают цвет шарика из 5 вариантов и блёстки из 3 вариантов. Нарисуй таблицу. Сколько сочетаний?',
+'Есть 4 разных печенья и 3 пряника. Двое берут по одному предмету одного вида по очереди. Сколько вариантов?',
+'Шахматная доска имеет 8 строк и 8 столбцов. Объясни взаимно однозначное соответствие клеток и пар «строка–столбец».',
+'Есть 5 билетов в театр, 9 в кино, 12 в цирк. Первый выбирает один. Куда ему пойти, чтобы другому осталось больше выбора другого вида?',
+'Из чисел 1–9 выпиши все неупорядоченные пары, сумма которых кратна 6. Сколько их?',
+'Из чисел 1–9 выпиши все неупорядоченные пары, произведение которых делится на 6. Сколько их?',
+'Из магнитиков с цифрами 0, 1, 4 составь все однозначные и двузначные числа без повторения. Сколько их?',
+'Есть 3 футболки, 4 брюк и 2 шапки. Сколько разных нарядов с одной вещью каждого вида?',
+'Два разных человека выбирают два различных места из 6. Сколько способов рассадить их на двух местах? А если не различать людей?',
+'Придумай свой пример, когда способы складывают, и свой пример, когда умножают. Нарисуй схему и объясни почему.'
+];
+const KEY='repet_combinatorics_series11_v1';
+let progress={solved:{},attempts:{},inputs:{},hints:{}};
+try{const v=JSON.parse(localStorage.getItem(KEY)||'null');if(v&&typeof v==='object')for(const k in progress)progress[k]=v[k]||{}}catch(e){}
+const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(progress))}catch(e){}};
+const isSolved=id=>!!progress.solved[id];
+const ALL=[...LESSONS.map((L,i)=>({id:'l-'+i})),...ORIGINAL,...PRACTICE,...FINALS];
+let view='learn',lesson=0,page=1,toastTimer=null,playTimer=null;
+const LAB={sweet:{sel:'ginger'},ban:{sel:'donut',reveal:false,predict:''},matrix:{colors:4,glitters:3,sel:[0,0]},same:{first:'cookie-0',second:null},board:{r:0,c:0},sum:{a:null,b:null,visible:0},product:{a:null,b:null,visible:0},digits:{picked:[],visible:0,warning:''}};
+function toast(msg){let e=$('toast');e.textContent=msg;e.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove('show'),2500)}
+function stopAuto(){if(playTimer){clearInterval(playTimer);playTimer=null}}
+function setView(v){if(!['learn','original','practice','final','rules','teacher'].includes(v))return;stopAuto();view=v;document.querySelectorAll('.view').forEach(x=>x.classList.toggle('hidden',x.id!=='view-'+v));document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===v));$('section-eyebrow').textContent=({learn:'ОЛИМПИАДНАЯ МАТЕМАТИКА · 4–7 КЛАСС',original:'СЕРИЯ 11 · ИСХОДНЫЕ ЗАДАЧИ',practice:'ТРЕНАЖЁР · ОТ ПРОСТОГО К СЛОЖНОМУ',final:'ИТОГОВАЯ САМОСТОЯТЕЛЬНАЯ',rules:'ШПАРГАЛКА И ДОМАШНЕЕ ЗАДАНИЕ',teacher:'МЕТОДИЧЕСКИЕ МАТЕРИАЛЫ'})[v];if(v==='learn')renderLesson();else if(v==='original')renderOriginal();else if(v==='practice')renderPractice();else if(v==='final')renderFinal();else if(v==='rules')updateStats();else if(v==='teacher')renderTeacher();window.scrollTo({top:0,behavior:'smooth'})}
+function updateStats(){const n=ALL.filter(o=>isSolved(o.id)).length,own=Object.values(progress.solved).filter(x=>x==='self').length,assist=Object.values(progress.solved).filter(x=>x==='help').length;
+ $('side-progress').style.width=(100*n/ALL.length)+'%';$('side-progress-text').textContent=`${n} из ${ALL.length} заданий решено`;$('lesson-score').textContent=LESSONS.filter((_,i)=>isSolved('l-'+i)).length+' / 8 опытов пройдено';$('original-score').textContent=ORIGINAL.filter(x=>isSolved(x.id)).length+' из 8 решено';$('practice-score').textContent=PRACTICE.filter(x=>isSolved(x.id)).length+' из '+PRACTICE.length+' решено';$('final-score').textContent=FINALS.filter(x=>isSolved(x.id)).length+' из 8 решено';$('total-done').textContent=n;$('own-done').textContent=own;$('help-done').textContent=assist;
+ const done=PRACTICE.filter(x=>isSolved(x.id)).length;$('practice-stats').innerHTML=`<div class="mini-stat"><strong>${PRACTICE.length}</strong> всего задач</div><div class="mini-stat"><strong>${done}</strong> решено</div><div class="mini-stat"><strong>${PRACTICE.length-done}</strong> осталось</div>`}
+function answerRow(p){const id=p.id,k=p.kind||'number',value=progress.inputs[id]||'',isChoice=k==='choice',control=isChoice?`<select class="inline-select" data-answer-id="${id}" aria-label="Выбери ответ"><option value="">Выбери ответ</option>${p.choices.map(([v,s])=>`<option value="${safe(v)}" ${v===value?'selected':''}>${safe(s)}</option>`).join('')}</select>`:`<input class="answer-input" data-answer-id="${id}" inputmode="numeric" autocomplete="off" type="text" value="${safe(value)}" placeholder="Ответ" aria-label="Ответ числом">`;
+ return `<div class="answer-row">${control}<button type="button" class="btn btn-primary" data-action="check" data-id="${id}">Проверить</button><button type="button" class="btn" data-action="hint" data-id="${id}">Подсказка ${progress.hints[id]||0?`${Math.min(progress.hints[id],3)}/3`:''}</button><button type="button" class="btn" data-action="solution" data-id="${id}">Разбор</button></div><div class="feedback ${isSolved(id)?'show good':''}" id="feedback-${id}" role="status" aria-live="polite">${isSolved(id)?'✓ Решено '+(progress.solved[id]==='self'?'самостоятельно':'с подсказкой')+'. '+safe(p.solution):''}</div>`}
+function problemHtml(p,source='practice'){return `<article class="problem-card ${isSolved(p.id)?'solved':''}" id="card-${p.id}"><div class="problem-head"><span class="problem-index">${source==='original'?'ЗАДАЧА ИЗ PDF':source==='final'?'ПРОВЕРКА':'ТРЕНАЖЁР'} № ${p.num}</span><span class="problem-label">${safe(topicName(p.topic))} · ${'●'.repeat(p.level)}</span></div><div class="problem-text">${safe(p.text)}</div><div class="mini-method">Запиши решение в тетради и объясни, какие способы складываешь или умножаешь.</div>${answerRow(p)}</article>`}
+function renderOriginal(){$('original-list').innerHTML=ORIGINAL.map(x=>problemHtml(x,'original')).join('');updateStats()}
+function renderFinal(){$('final-list').innerHTML=FINALS.map(x=>problemHtml(x,'final')).join('');updateStats()}
+function filteredPractice(){const topic=$('topic-filter').value,diff=$('difficulty-filter').value,status=$('status-filter').value;return PRACTICE.filter(p=>(topic==='all'||p.topic===topic)&&(diff==='all'||p.level===+diff)&&(status==='all'||(status==='solved')===isSolved(p.id)))}
+function renderPractice(){const list=filteredPractice();const totalPages=Math.max(1,Math.ceil(list.length/12));if(page>totalPages)page=totalPages;const seg=list.slice((page-1)*12,page*12);$('practice-list').innerHTML=seg.length?seg.map(x=>problemHtml(x)).join(''):'<div class="empty">По выбранным фильтрам заданий нет.</div>';let first=Math.max(1,page-2),last=Math.min(totalPages,first+4);first=Math.max(1,last-4);$('practice-pages').innerHTML=[`<button class="btn" data-page="${Math.max(1,page-1)}" ${page===1?'disabled':''}>←</button>` ,...Array.from({length:last-first+1},(_,i)=>`<button class="btn ${page===first+i?'active':''}" data-page="${first+i}">${first+i}</button>`),`<button class="btn" data-page="${Math.min(totalPages,page+1)}" ${page===totalPages?'disabled':''}>→</button>`].join('');updateStats()}
+function renderTeacher(){$('teacher-answers').innerHTML=ORIGINAL.map(p=>`<div class="teacher-answer"><b>№ ${p.num}:</b> ${p.kind==='choice'?p.choices.find(x=>x[0]===p.answer)[1]:p.answer}. <span>${safe(p.solution)}</span></div>`).join('')}
+function check(p){const raw=(progress.inputs[p.id]||'').trim().replaceAll(',','.');let correct=false;if((p.kind||'number')==='choice')correct=raw===String(p.answer);else if(raw!==''&&/^-?\d+(?:\.\d+)?$/.test(raw))correct=Number(raw)===Number(p.answer);let attempts=progress.attempts[p.id]||0;progress.attempts[p.id]=attempts+1;if(correct)progress.solved[p.id]=progress.solved[p.id]||(progress.hints[p.id]?'help':'self');persist();const fb=$('feedback-'+p.id);if(!fb)return;fb.classList.add('show');fb.classList.remove('bad','good','help');if(correct){fb.classList.add('good');fb.textContent=`Верно! Решено ${progress.solved[p.id]==='self'?'самостоятельно':'с подсказкой'}. ${p.solution||p.miniSolution}`;toast('Правильно! Продолжай.');const card=$('card-'+p.id);if(card)card.classList.add('solved');if(p.id.startsWith('l-'))renderLessonTabs();updateStats()}else{fb.classList.add('bad');const h=p.hints||[p.miniHint,p.miniSolution];fb.textContent=`Пока неверно. ${attempts===0?'Сначала выясни, ты выбираешь один предмет или последовательность вариантов.':h[Math.min(1,attempts)]} Ответ сохранился, попробуй снова.`}}
+function showHint(p){let n=Math.min(3,(progress.hints[p.id]||0)+1);progress.hints[p.id]=n;persist();const fb=$('feedback-'+p.id);if(!fb)return;fb.className='feedback show help';const hs=p.hints||[p.miniHint,p.miniSolution,p.miniSolution];fb.textContent=`Подсказка ${n}/3: ${hs[Math.min(n-1,hs.length-1)]||p.solution}`}
+function showSolution(p){const attempts=progress.attempts[p.id]||0;const fb=$('feedback-'+p.id);if(!fb)return;fb.className='feedback show help';if(attempts===0){fb.textContent='Сначала сделай хотя бы одну попытку. Решение откроется после проверки твоего ответа.';return}progress.hints[p.id]=3;persist();fb.textContent=`Разбор: ${p.solution||p.miniSolution}`}
+function renderLessonTabs(){$('lesson-tabs').innerHTML=LESSONS.map((x,i)=>`<button class="lesson-tab ${lesson===i?'active':''}" data-lesson="${i}">${i+1}. ${safe(x.short)} ${isSolved('l-'+i)?'✓':''}</button>`).join('')}
+function renderLesson(){renderLessonTabs();const p=LESSONS[lesson];$('lesson-num').textContent=`ОПЫТ ${lesson+1} ИЗ 8`;$('lesson-title').textContent=p.name;$('lesson-intro').textContent=p.intro;$('lesson-done').classList.toggle('hidden',!isSolved('l-'+lesson));renderLab();const obj={...p,id:'l-'+lesson};$('lesson-quiz').innerHTML=`<div class="micro-heading">ТВОЯ ОЧЕРЕДЬ · МИНИ-ПРОВЕРКА ${lesson+1} ИЗ 8</div><h3>${safe(p.check)}</h3>${answerRow(obj)}`;$('prev-lesson').disabled=lesson===0;$('next-lesson').textContent=lesson===LESSONS.length-1?'Перейти к исходным задачам →':'Следующий опыт →';updateStats()}
+const info=[
+{h:'Выбрать один предмет',text:'Три группы не пересекаются. Нельзя выбрать одновременно пряник и пончик, если условие просит лишь ОДНУ сладость.',formula:'10 + 7 + 20 = 37',idea:'Складываем способы, когда выбираем один из разных случаев.'},
+{h:'Запрет целого вида',text:'Нюша взяла сладость одного вида. Крош берёт другого. Это ограничение на категорию, а не на один уже съеденный предмет.',formula:'15 + 15 = 30',idea:'Если все виды содержат по 15 предметов, выбор Нюши не меняет итоговые 30 способов Кроша.'},
+{h:'Два независимых выбора',text:'Каждый вариант — цвет вместе с формой блёсток. В таблице ни одна комбинация не пропадает и не повторяется.',formula:'4 × 3 = 12',idea:'Для каждого из четырёх цветов есть три украшения, значит получаем четыре группы по три.'},
+{h:'Выбор без возвращения',text:'Нюша и Крош получают разные предметы. Поэтому после первого выбора вариантов меньше на один.',formula:'3 × 2 + 4 × 3 = 18',idea:'Сначала умножаем внутри случаев; затем складываем непересекающиеся случаи.'},
+{h:'Строка ↔ столбец',text:'Выбирая номер строки и номер столбца, мы выбираем единственную клетку на их пересечении.',formula:'8 × 8 = 64',idea:'Ровно одна пара для каждой клетки — ни пропусков, ни повторов.'},
+{h:'Пары без повторов',text:'Ник выбирает два числа одновременно: (2,4) и (4,2) — не разные варианты. Записывай меньший номер первым.',formula:'2 + 4 + 1 = 7',idea:'Разбиваем по возможной сумме: 6, 12 или 18. Следим, чтобы каждый случай учитывался один раз.'},
+{h:'Произведение кратно 6',text:'Сначала выдели пары с числом 6; затем смотри только пары без него. Так пересечений не будет.',formula:'9 + 8 = 17',idea:'Нельзя дважды учесть пару (3,6): разные случаи должны исключать друг друга.'},
+{h:'Каждый магнитик один раз',text:'0 — самостоятельное однозначное число. Для двух- и трёхзначных чисел первый магнитик не может быть нулём.',formula:'4 + 9 + 18 = 31',idea:'Разбиваем по длине числа: 1, 2 и 3 цифры. Внутри каждой длины проверяем первую цифру.'}
+];
+function renderExplanation(){const x=info[lesson];$('lab-explanation').innerHTML=`<h3>Разбираемся без спешки</h3><p>${x.text}</p><div class="formula">${x.formula}</div><div class="key-idea"><span aria-hidden="true">💡</span><span>${x.idea}</span></div><p class="footnote" style="margin-top:20px"><b>Порядок:</b> посмотри → предположи → сделай сам → сравни → объясни, почему результат именно такой.</p>`}
+const pickBtn=(value,label,active,what)=>`<button class="choice-button ${active?'active':''}" type="button" data-lab="${what}" data-value="${safe(value)}">${label}</button>`;
+const subStat=(a,b,c,aa,bb,cc)=>`<div class="lab-counters"><div><b>${fmt(a)}</b><small>${aa}</small></div><div><b>${fmt(b)}</b><small>${bb}</small></div><div><b>${fmt(c)}</b><small>${cc}</small></div></div>`;
+const sumPairs=allPairs(10,(a,b)=>(a+b)%6===0),prodPairs=allPairs(10,(a,b)=>(a*b)%6===0);
+function renderLab(){renderExplanation();const e=$('lab-stage');let out='';
+ if(lesson===0){const names=[['ginger','Прянички',10],['cookie','Печеньки',7],['donut','Пончики',20]],chosen=names.find(n=>n[0]===LAB.sweet.sel);out=`<h3>Одна сладость из трёх корзин</h3><p>Сначала предскажи: нужно сложить числа или перемножить? Выбери корзину и проверь.</p><div class="lab-grid">${names.map(x=>`<button class="lab-tile ${x[0]===LAB.sweet.sel?'active':''}" data-lab="sweet-select" data-value="${x[0]}"><strong>${x[2]}</strong><small>${x[1]}</small></button>`).join('')}</div>${subStat(10,7,20,'пряничков','печенек','пончиков')}<div class="lab-note">Ты выбрал(а) корзину «${chosen[1]}». В ней ${chosen[2]} разных предметов. Но Нюша может выбрать <b>одну сладость из любой корзины</b>.</div><div class="lab-computed">10 + 7 + 20 = 37 способов</div><p class="visual-caption">На бумаге нарисуй три прямоугольника-корзины и объясни, почему 10 × 7 × 20 здесь неверно.</p>`}
+ if(lesson===1){let labels=[['ginger','Пряничек'],['cookie','Печеньку'],['donut','Пончик']],sel=LAB.ban.sel;out=`<h3>Крош не повторяет вид сладости</h3><p>Нажми, что взяла Нюша. Представь, какие корзины остались разрешёнными.</p><div class="sample-options">${labels.map(x=>pickBtn(x[0],x[1],sel===x[0],'ban-select')).join('')}</div><div class="lab-grid">${labels.map(x=>`<div class="lab-tile ${sel===x[0]?'active':''}" style="cursor:default"><strong>15</strong><small>${x[0]===sel?'НЮША ВЫБРАЛА ЭТОТ ВИД':'КРОШУ ДОСТУПНО'}</small></div>`).join('')}</div><div class="prediction"><b>Предположи:</b> сколько способов у Кроша? <input id="ban-predict" inputmode="numeric" value="${safe(LAB.ban.predict)}" placeholder="Число" aria-label="Прогноз количества способов"><button class="btn btn-primary" data-lab="ban-reveal">Показать результат</button></div><div class="lab-note">${LAB.ban.reveal?'Крош может взять любой из двух других видов: 15 + 15 = <b>30 способов</b>.':'Пока результат скрыт. Назови две разрешённые категории.'}</div><p class="visual-caption">На бумаге: почему вычитание 1 вместо исключения целой категории будет ошибкой?</p>`}
+ if(lesson===2){const st=LAB.matrix,colors=[['#F6C8C2','Красный'],['#CEDCF7','Синий'],['#CBE9D5','Зелёный'],['#F9E5B6','Жёлтый']],shapes=['✧ Снежинки','♡ Сердечки','◯ Кружочки'];out=`<h3>Таблица «цвет × блёстки»</h3><p>Каждая клетка — одна комбинация. Изменяй число цветов и блёсток и проверяй правило.</p><div class="lab-stepper"><label>Цветов <input type="number" min="1" max="4" value="${st.colors}" data-range="colors" aria-label="Число цветов (1–4)"></label><label>Видов блёсток <input type="number" min="1" max="3" value="${st.glitters}" data-range="glitters" aria-label="Число типов блёсток (1–3)"></label></div><div class="lab-matrix" style="--cols:${st.glitters}">${Array.from({length:st.colors},(_,r)=>Array.from({length:st.glitters},(_,c)=>`<button class="matrix-cell ${st.sel[0]===r&&st.sel[1]===c?'active':''}" data-lab="matrix-cell" data-value="${r}-${c}" style="background:${colors[r][0]}">${colors[r][1]}<br>${shapes[c]}</button>`).join('')).join('')}</div>${subStat(st.colors,st.glitters,st.colors*st.glitters,'цветов','форм блёсток','сочетаний')}<div class="lab-note">Выбрана клетка: цвет «${colors[Math.min(st.sel[0],st.colors-1)][1]}», блёстки «${shapes[Math.min(st.sel[1],st.glitters-1)]}». Каждую пару можно выбрать ровно один раз.</div><div class="lab-computed">${st.colors} × ${st.glitters} = ${st.colors*st.glitters}</div><p class="visual-caption">Поставь снова 4 цвета и 3 блёстки. Запиши одну строку таблицы в тетради.</p>`}
+ if(lesson===3){let st=LAB.same,types=[...Array.from({length:3},(_,i)=>({id:'cookie-'+i,title:'Печенье '+(i+1),type:'cookie'})),...Array.from({length:4},(_,i)=>({id:'ginger-'+i,title:'Пряник '+(i+1),type:'ginger'}))],first=types.find(x=>x.id===st.first),second=types.find(x=>x.id===st.second);out=`<h3>Сначала Нюша, потом Крош</h3><p>Выбери сладость Нюши, потом отличающуюся сладость ТОГО ЖЕ вида для Кроша.</p><div class="lab-subtitle">1. Что берёт Нюша?</div><div class="lab-grid">${types.map(x=>`<button class="lab-tile ${st.first===x.id?'active':''}" data-lab="same-first" data-value="${x.id}"><strong>${x.type==='cookie'?'◯':'◇'}</strong><small>${x.title}</small></button>`).join('')}</div><div class="lab-subtitle">2. Что может взять Крош?</div><div class="lab-grid">${types.filter(x=>x.type===first.type&&x.id!==first.id).map(x=>`<button class="lab-tile ${st.second===x.id?'active':''}" data-lab="same-second" data-value="${x.id}"><strong>${x.type==='cookie'?'◯':'◇'}</strong><small>${x.title}</small></button>`).join('')}</div><div class="lab-note">${second?`Выбрана пара: Нюша — ${first.title}, Крош — ${second.title}.`: `Для выбора «${first.title}» осталось ${first.type==='cookie'?'2 печенья':'3 пряника'} для Кроша.`}</div><div class="lab-computed">3 × 2 + 4 × 3 = 18</div><p class="visual-caption">Пары между двумя разными людьми упорядочены. Проверь маленький пример из трёх печенек на бумаге.</p>`}
+ if(lesson===4){let st=LAB.board;out=`<h3>Шахматная доска 8 × 8</h3><p>Выбирай клетку. Номер строки и столбца обновится автоматически.</p><div class="board-8">${Array.from({length:64},(_,i)=>{let r=Math.floor(i/8),c=i%8;return `<button class="cell-btn ${(r+c)%2?'dark':'light'} ${st.r===r&&st.c===c?'active':''}" data-lab="board-cell" data-value="${r}-${c}" aria-label="Строка ${r+1}, столбец ${c+1}">${r+1},${c+1}</button>`}).join('')}</div>${subStat(st.r+1,st.c+1,64,'строка','столбец','разных клеток')}<div class="lab-note">Клетка (${st.r+1}, ${st.c+1}) ↔ пара «строка ${st.r+1}, столбец ${st.c+1}». У двух способов описать выбор <b>один и тот же</b> набор вариантов.</div><p class="visual-caption">Нарисуй таблицу 3 × 4 на бумаге и пронумеруй все пары.</p>`}
+ if(lesson===5||lesson===6){const st=lesson===5?LAB.sum:LAB.product,pairs=lesson===5?sumPairs:prodPairs,valid=st.a!=null&&st.b!=null&&(lesson===5?(st.a+st.b)%6===0:(st.a*st.b)%6===0),meaning=lesson===5?'сумма':'произведение';out=`<h3>${lesson===5?'Перебор по сумме':'Перебор по произведению'}</h3><p>Нажми на два РАЗНЫХ числа. Потом раскрывай подходящие пары по одной, чтобы не посчитать повторно.</p><div class="number-picks">${Array.from({length:10},(_,i)=>i+1).map(i=>`<button class="number-pick ${i===st.a||i===st.b?'active':''}" data-lab="${lesson===5?'sum-pick':'product-pick'}" data-value="${i}">${i}</button>`).join('')}</div><div class="lab-note">${st.a!=null&&st.b!=null?`Пара (${Math.min(st.a,st.b)}, ${Math.max(st.a,st.b)}): ${meaning} = ${lesson===5?st.a+st.b:st.a*st.b}. ${valid?'<b>Подходит!</b>':'Не делится на 6.'}`:`Выбери два числа. Порядок не имеет значения.`}</div><div class="lab-subtitle">Предскажи число пар, затем открывай варианты:</div><div class="lab-stepper"><button class="btn" data-lab="pair-prev">← Назад</button><button class="btn btn-primary" data-lab="pair-next">Следующая пара →</button><button class="btn" data-lab="pair-auto">${playTimer?'Пауза':'Авто'}</button><button class="btn" data-lab="pair-reset">Повторить</button></div><div class="pair-visual"><span class="pair-big">${st.visible?`(${pairs[st.visible-1].join(', ')})`:'? + ?'}</span><span style="color:#7A7168">${st.visible} из ${pairs.length} открыто</span></div><div class="pair-list">${pairs.slice(0,st.visible).map((p,i)=>`<span class="${i===st.visible-1?'highlight':''}">(${p.join(', ')})</span>`).join('')}</div><p class="visual-caption">Задача: доказать, что показан полный перебор и ни одна пара не повторилась.</p>`}
+ if(lesson===7){const st=LAB.digits,all=numbersFromDigits([0,2,3,5],3),pick=st.picked.map(String).join(''),valid=st.picked.length>0&&(st.picked.length===1||st.picked[0]!==0);out=`<h3>Магнитики 0, 2, 3, 5</h3><p>Составь число из 1–3 цифр. Каждый магнитик можно использовать только один раз.</p><div class="digit-magnets">${[0,2,3,5].map(n=>`<button class="digit-magnet ${st.picked.includes(n)?'active':''}" data-lab="digit-pick" data-value="${n}" ${st.picked.includes(n)?'disabled':''}>${n}</button>`).join('')}</div><div class="digit-display" aria-live="polite">${pick||'· · ·'}</div><div class="lab-row"><button class="btn" data-lab="digit-undo">← Убрать последнюю</button><button class="btn" data-lab="digit-clear">Начать заново</button><button class="btn btn-primary" data-lab="digit-show">Следующий пример →</button></div><div class="lab-note">${st.warning?`<b>${safe(st.warning)}</b>`:valid?`Число ${pick} возможно. Оно не повторяет магнитики, и впереди нет лишнего нуля.`:'Запиши одну цифру или начни многозначное число с 2, 3 или 5.'}</div>${subStat(4,9,18,'однозначных','двузначных','трёхзначных')}<div class="lab-computed">4 + 9 + 18 = 31</div><div class="lab-note">Примеры по одному: ${all.slice(0,st.visible).map(n=>`<b>${n}</b>`).join(', ')||'Пока скрыты — попробуй сам.'}</div><p class="visual-caption">В тетради перечисли все двузначные числа и сравни с моделью.</p>`}
+ e.innerHTML=out}
+function handleLab(action,value){const stSum=lesson===5?LAB.sum:LAB.product;switch(action){
+ case 'sweet-select':LAB.sweet.sel=value;break;
+ case 'ban-select':LAB.ban.sel=value;LAB.ban.reveal=false;break;
+ case 'ban-reveal':LAB.ban.reveal=true;if(LAB.ban.predict.trim()){toast(Number(LAB.ban.predict)===30?'Отличный прогноз!':'Вспомни: запрещена целая группа, а не один предмет.')}break;
+ case 'matrix-cell':{let [r,c]=value.split('-').map(Number);LAB.matrix.sel=[r,c];break}
+ case 'same-first':LAB.same.first=value;LAB.same.second=null;break;
+ case 'same-second':LAB.same.second=value;break;
+ case 'board-cell':{let [r,c]=value.split('-').map(Number);LAB.board.r=r;LAB.board.c=c;break}
+ case 'sum-pick':case 'product-pick':{let st=action==='sum-pick'?LAB.sum:LAB.product,n=Number(value);if(st.a===null||st.b!==null){st.a=n;st.b=null}else if(n!==st.a)st.b=n;break}
+ case 'pair-prev':stopAuto();stSum.visible=Math.max(0,stSum.visible-1);break;
+ case 'pair-next':stopAuto();stSum.visible=Math.min((lesson===5?sumPairs:prodPairs).length,stSum.visible+1);break;
+ case 'pair-reset':stopAuto();stSum.visible=0;break;
+ case 'pair-auto':if(playTimer){stopAuto()}else{const max=(lesson===5?sumPairs:prodPairs).length;if(stSum.visible===max)stSum.visible=0;playTimer=setInterval(()=>{stSum.visible++;if(stSum.visible>=max)stopAuto();if(view==='learn'&&(lesson===5||lesson===6))renderLab()},680)}break;
+ case 'digit-pick':{const n=Number(value),st=LAB.digits;if(st.picked.includes(n)||st.picked.length>=3){st.warning='Можно взять не больше трёх разных магнитиков.';break}if(st.picked.length===1&&st.picked[0]===0){st.warning='0 уже образует число 0. Чтобы сделать многозначное число, начни с другой цифры.';break}st.picked.push(n);st.warning='';break}
+ case 'digit-undo':LAB.digits.picked.pop();LAB.digits.warning='';break;
+ case 'digit-clear':LAB.digits.picked=[];LAB.digits.warning='';LAB.digits.visible=0;break;
+ case 'digit-show':LAB.digits.visible=Math.min(31,LAB.digits.visible+1);break;
+ default:return;
+ }renderLab()}
+function preparePrint(){const html=`<h1>Репет · Комбинаторика–1</h1><div class="sheet-meta">Школково, серия 11 · Дополнительное домашнее задание<br>Фамилия и имя: ___________________________________ Дата: ______________</div><p>Реши задачи, запиши <b>объяснение</b>: почему сложение, умножение или разбор случаев.</p><div class="sheet-grid">${HOMEWORK.map((x,i)=>`<div class="sheet-item"><strong>${i+1}.</strong> ${safe(x)}</div>`).join('')}</div><p style="margin-top:9mm;font-size:9pt">Не забудь: пары без учёта порядка и пары с учётом порядка — разные задачи.</p>`;$('printSheet').innerHTML=html}
+function printHomework(){preparePrint();window.print()}
+function printPreview(){$('homework-preview').classList.toggle('hidden');$('homework-preview').innerHTML=HOMEWORK.map((x,i)=>`<div class="hw-preview-item"><b>${i+1}.</b> ${safe(x)}</div>`).join('')}
+// Event delegation prevents lost handlers when tasks and mathematical models rerender.
+document.addEventListener('click',e=>{
+ const v=e.target.closest('[data-view]');if(v){setView(v.dataset.view);return}
+ const l=e.target.closest('[data-lesson]');if(l){stopAuto();lesson=Number(l.dataset.lesson);renderLesson();return}
+ const act=e.target.closest('[data-action]');if(act){const id=act.dataset.id,p=id.startsWith('l-')?{...LESSONS[Number(id.slice(2))],id}:ALL.find(x=>x.id===id);if(!p)return;const obj=p;if(act.dataset.action==='check')check(obj);else if(act.dataset.action==='hint')showHint(obj);else if(act.dataset.action==='solution')showSolution(obj);return}
+ const la=e.target.closest('[data-lab]');if(la){handleLab(la.dataset.lab,la.dataset.value);return}
+ const pg=e.target.closest('[data-page]');if(pg){page=Number(pg.dataset.page);renderPractice();$('view-practice').scrollIntoView({behavior:'smooth'});return}
+});
+document.addEventListener('input',e=>{
+ const ans=e.target.closest('[data-answer-id]');if(ans){progress.inputs[ans.dataset.answerId]=ans.value;persist();return}
+ if(e.target.id==='ban-predict'){LAB.ban.predict=e.target.value;return}
+ const range=e.target.closest('[data-range]');if(range){const key=range.dataset.range,min=1,max=key==='colors'?4:3;let v=Number(range.value);if(Number.isFinite(v)){LAB.matrix[key]=Math.max(min,Math.min(max,Math.round(v)));LAB.matrix.sel=[Math.min(LAB.matrix.sel[0],LAB.matrix.colors-1),Math.min(LAB.matrix.sel[1],LAB.matrix.glitters-1)];renderLab()}}
+});
+document.addEventListener('change',e=>{
+ const ans=e.target.closest('[data-answer-id]');if(ans){progress.inputs[ans.dataset.answerId]=ans.value;persist();return}
+ if(e.target.matches('#topic-filter,#difficulty-filter,#status-filter')){page=1;renderPractice()}
+});
+document.addEventListener('keydown',e=>{
+ const a=e.target.closest('[data-answer-id]');if(a&&e.key==='Enter'){e.preventDefault();const id=a.dataset.answerId,p=id.startsWith('l-')?{...LESSONS[Number(id.slice(2))],id}:ALL.find(x=>x.id===id);if(p)check(p)}
+});
+$('prev-lesson').addEventListener('click',()=>{if(lesson){stopAuto();lesson--;renderLesson()}});
+$('next-lesson').addEventListener('click',()=>{stopAuto();if(lesson===7)setView('original');else{lesson++;renderLesson()}});
+$('topic-filter').innerHTML='<option value="all">Все темы</option>'+TOPICS.map(([id,title])=>`<option value="${id}">${safe(title)}</option>`).join('');
+$('random-task').addEventListener('click',()=>{const rows=filteredPractice();if(!rows.length){toast('Подходящих задач нет. Измени фильтры.');return}const p=rows[Math.floor(Math.random()*rows.length)];page=Math.floor(rows.indexOf(p)/12)+1;renderPractice();const target=$('card-'+p.id);if(target)target.scrollIntoView({behavior:'smooth',block:'center'})});
+$('reset-progress').addEventListener('click',()=>{if(!confirm('Удалить все ответы, попытки, подсказки и прогресс по комбинаторике в этом браузере?'))return;progress={solved:{},attempts:{},inputs:{},hints:{}};persist();stopAuto();renderLesson();setView(view);toast('Прогресс сброшен')});
+$('print-tasks').addEventListener('click',printHomework);$('print-homework').addEventListener('click',printHomework);$('print-teacher').addEventListener('click',printHomework);$('show-homework').addEventListener('click',printPreview);
+updateStats();renderLesson();
+
+</script>
+</body>
+</html>

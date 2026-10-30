@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#FAF7F2">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+CiAgPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiByeD0iMTAiIGZpbGw9IiNmZmZkZmEiLz4KICA8cGF0aCBkPSJNMTggN2gxMmM4LjMgMCAxNCA1LjEgMTQgMTIuNVMzOC4zIDMyIDMwIDMyaC00djloLThWN1ptOCA3LjV2MTBoNGMzLjkgMCA2LTEuOCA2LTVzLTIuMS01LTYtNWgtNFoiIGZpbGw9IiMzZjc2NTkiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPgogIDxwYXRoIGQ9Ik00IDEyLjVhMSAxIDAgMCAxIDEuNC0uOWw4LjYgNFY0MWwtOC44LTQuMUEyIDIgMCAwIDEgNCAzNS4xVjEyLjVaIiBmaWxsPSIjZDU1ZjI3Ii8+Cjwvc3ZnPg==">
+<title>Репет · Эффект ±1 — интерактивный урок и 162 задачи</title>
+<style>
+/* РЕПЕТ — автономная тема интерфейса. Никаких внешних зависимостей. */
+:root {
+ --bg:#FAF7F2; --white:#FFFDFA; --ink:#2F2A24; --muted:#7A7168;
+ --green:#3F7659; --green-deep:#315F49; --greenbg:#EDF2EB;
+ --orange:#D55F27; --orangebg:#F9EDE4;
+ --red:#C76D62; --redbg:#FAEEEB;
+ --line:#E8E1D8; --soft:#F6F1E9;
+ --shadow:0 12px 32px rgba(59,51,38,.035);
+ --blue:var(--green); --violet:var(--green); --sky:var(--greenbg); --violetbg:var(--greenbg);
+ --rad:16px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Manrope,Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit}button{cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #D2A06C;outline-offset:3px}
+a{color:var(--green)}b,strong{font-weight:800}
+.layout{display:grid;grid-template-columns:258px minmax(0,1fr);min-height:100vh}
+.sidebar{position:sticky;top:0;height:100vh;padding:32px 19px 24px;background:var(--white);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow-y:auto}
+.brand{display:flex;align-items:center;gap:12px;padding:1px 11px 27px;margin-bottom:20px;border-bottom:1px solid var(--line)}
+.brand-mark{position:relative;flex:0 0 40px;height:40px;border-radius:12px;background:#EDF2EB;color:var(--green);display:grid;place-items:center;font-weight:900;font-size:24px;line-height:1;letter-spacing:-1.4px}
+.brand-mark:after{content:'';position:absolute;right:5px;top:5px;width:8px;height:8px;border-radius:50%;background:var(--orange);border:2px solid var(--white)}
+.brand-name{font-size:24px;line-height:1.05;font-weight:870;letter-spacing:-1.35px;color:var(--ink)}
+.brand-sub{color:var(--muted);font-size:10px;line-height:1.4;font-weight:700;letter-spacing:.075em;text-transform:uppercase;margin-top:5px}
+.nav-label{font-size:10px;text-transform:uppercase;letter-spacing:.14em;font-weight:800;color:#998F83;padding:0 12px;margin:10px 0 14px}
+.nav-wrap{display:flex;flex-direction:column;gap:6px}
+.nav-btn{width:100%;display:flex;gap:11px;align-items:center;padding:12px 11px;border:1px solid transparent;border-radius:10px;background:transparent;text-align:left;color:#615B52;font-size:13px;font-weight:700;line-height:1.4;transition:background .15s,color .15s,border-color .15s}
+.nav-btn:hover{background:#F7F4EE;color:var(--ink)}
+.nav-btn.active{background:var(--greenbg);color:var(--green-deep);border-color:#D8E5D8;font-weight:850}
+.nav-icon{flex-shrink:0;width:27px;height:27px;display:grid;place-items:center;border-radius:8px;font-size:16px;filter:saturate(.7)}
+.nav-btn.active .nav-icon{background:#DCE8DA;filter:none}
+.nav-count{margin-left:auto;flex-shrink:0;padding:2px 8px;background:#F3F0EB;border:1px solid var(--line);color:#7F7568;border-radius:7px;font-size:11px;font-weight:800}
+.nav-btn.active .nav-count{background:var(--white);border-color:#D8E5D8;color:var(--green)}
+.sidebar-bottom{margin-top:auto;padding:18px 17px 15px;background:#F6F2EB;border:1px solid var(--line);border-radius:14px}
+.tiny-caps{font-size:11px;color:var(--ink);font-weight:850;letter-spacing:.055em;text-transform:uppercase}
+.progress-track{height:7px;background:#E3DDD3;border-radius:30px;overflow:hidden;margin:12px 0 9px}
+.progress-fill{width:0;height:100%;background:var(--green);border-radius:30px;transition:width .3s}
+.progress-text{color:var(--muted);font-size:12px;line-height:1.5;font-weight:700}
+.resetbtn{color:#8D6F5D;background:transparent;border:0;padding:8px 0 0;text-align:left;font-size:11px;font-weight:750;text-decoration:underline;text-underline-offset:3px}
+.resetbtn:hover{color:#A54E29}
+.main{width:100%;max-width:1450px;min-width:0;margin:0 auto;padding:38px clamp(24px,4vw,66px) 90px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:22px;min-height:25px}
+.eyebrow{color:var(--green);font-size:11px;font-weight:850;letter-spacing:.105em;text-transform:uppercase;line-height:1.45}
+.pill{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--white);color:var(--muted);padding:7px 12px;font-size:11px;font-weight:740;border-radius:999px;line-height:1.4}
+.hero{isolation:isolate;position:relative;overflow:hidden;background:var(--white);border:1px solid var(--line);border-radius:20px;min-height:228px;padding:34px clamp(26px,3.4vw,47px);box-shadow:var(--shadow);margin:0 0 31px}
+.hero:before{content:'';position:absolute;right:-64px;top:-125px;width:400px;height:400px;border:1px solid #D9E3D8;border-radius:50%;pointer-events:none;z-index:-1}
+.hero:after{content:'';position:absolute;right:10px;top:-66px;width:240px;height:240px;border:40px solid #F0F4EB;border-radius:50%;pointer-events:none;z-index:-1;opacity:.8}
+.hero-topline{display:inline-flex;align-items:center;gap:8px;color:var(--orange);font-weight:850;font-size:11px;letter-spacing:.125em;text-transform:uppercase}
+.hero-topline:before{content:'';height:7px;width:7px;background:var(--orange);border-radius:50%}
+.hero h1{font-size:40px;line-height:1.15;letter-spacing:-1.75px;font-weight:860;margin:14px 0 12px;max-width:680px;color:var(--ink)}
+.hero h1 span{color:var(--orange)!important;opacity:1!important}
+.hero p{max-width:730px;color:var(--muted);font-size:15px;line-height:1.75;margin:0 0 22px}
+.hero-stats{display:flex;flex-wrap:wrap;gap:8px}
+.hero-stat{border:1px solid var(--line);background:#F9F6F0;color:#625B51;border-radius:9px;padding:7px 11px;font-size:11px;font-weight:780;line-height:1.55}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:17px;margin:27px 0 20px}
+.page-head h2{font-size:27px;line-height:1.24;letter-spacing:-.85px;margin:0 0 6px;font-weight:845}
+.page-head p{margin:0;color:var(--muted);font-size:14px;line-height:1.7}
+.card{background:var(--white);border:1px solid var(--line);border-radius:var(--rad);box-shadow:var(--shadow)}
+.lesson-shell{padding:29px}
+.lesson-top{display:flex;align-items:flex-start;justify-content:space-between;gap:13px;margin-bottom:19px}
+.lesson-num{color:var(--orange);font-size:11px;letter-spacing:.12em;font-weight:850;text-transform:uppercase}
+.lesson-title{font-size:27px;line-height:1.22;letter-spacing:-.8px;margin:7px 0 9px;font-weight:850}
+.lesson-intro{color:var(--muted);font-size:15px;margin:0;max-width:840px}
+.lesson-tabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+.lesson-tab{background:var(--white);border:1px solid var(--line);color:#686158;font-size:12px;font-weight:770;padding:9px 12px;border-radius:10px;transition:background .15s,color .15s}
+.lesson-tab:hover{background:#F6F3ED}
+.lesson-tab.active{color:var(--green-deep);background:var(--greenbg);border-color:#CBDECE}
+.concept-layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(260px,1fr);gap:15px;align-items:stretch}
+.stage{min-height:352px;position:relative;overflow:hidden;padding:26px;border-radius:14px;border:1px solid #E3E9DE;background:linear-gradient(135deg,#F3F6EF 0%,#F8F7F0 90%)}
+.stage:before{content:'';position:absolute;right:-88px;top:-125px;width:240px;height:240px;border:1px solid #DEE8DD;border-radius:50%;pointer-events:none}
+.stage h3{position:relative;margin:0 0 6px;font-size:18px;letter-spacing:-.45px;font-weight:845;color:var(--ink)}
+.stage p{position:relative;color:var(--muted);margin:0 0 16px;font-size:13px;line-height:1.7}
+.explanation{border:1px solid var(--line);border-radius:14px;background:#FFFDF9;padding:24px}
+.explanation h3{font-size:16px;margin:0 0 12px;letter-spacing:-.25px}
+.explanation p,.explanation li{font-size:13px;line-height:1.75;color:#665D51}
+.explanation ul{padding-left:19px;margin:11px 0}
+.formula{display:block;margin:15px 0;border-radius:11px;border:1px solid #D8E6D8;background:var(--greenbg);color:var(--green-deep);padding:15px 10px;text-align:center;font-size:clamp(16px,2vw,20px);font-weight:850;letter-spacing:-.25px}
+.key-idea{display:flex;align-items:flex-start;gap:10px;background:#FBF2E7;border:1px solid #EEDCC5;color:#81502D;padding:14px;border-radius:11px;margin:16px 0;font-size:13px;line-height:1.7;font-weight:680}
+.lab-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:13px 0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #DDD7CE;border-radius:10px;background:var(--white);color:#4D493F;padding:10px 13px;min-height:41px;line-height:1.35;font-size:12px;font-weight:810;text-align:center;transition:border-color .15s,background .15s,color .15s,transform .15s}
+.btn:hover:not(:disabled){background:#F3F0E9;border-color:#CFC8BD;transform:translateY(-1px)}
+.btn-primary{background:var(--green);border-color:var(--green);color:#fff}
+.btn-primary:hover:not(:disabled){background:var(--green-deep);border-color:var(--green-deep);color:#fff}
+.btn-green{background:#E7F0E7;border-color:#C9DFCE;color:var(--green-deep)}
+.btn-soft{background:#F4EEE5;border-color:#E3D6C8;color:#87552F}
+.lab-note{border-radius:10px;border:1px solid #DFE7DA;background:var(--white);color:#5D6658;min-height:48px;padding:12px 14px;font-size:13px;font-weight:680;line-height:1.65}
+.lab-note strong{color:var(--green-deep)}
+.counter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:15px 0}
+.counter{min-width:0;text-align:center;background:var(--white);border:1px solid #E0E6DD;border-radius:11px;padding:14px 7px}
+.counter b{font-size:25px;line-height:1.24;color:var(--green-deep);display:block;letter-spacing:-.8px}
+.counter small{font-size:10px;line-height:1.35;color:#857D6E;font-weight:840;letter-spacing:.02em;display:block;margin-top:4px}
+.number-strip{position:relative;display:flex;align-content:flex-start;flex-wrap:wrap;gap:7px;margin:21px 0 11px}
+.number-item{position:relative;flex:0 0 43px;height:46px;border:1px solid #CBCFC4;background:var(--white);border-radius:9px;display:grid;place-items:center;color:#756F64;font-size:14px;font-weight:830;transition:background .22s,border-color .22s,color .22s,transform .22s}
+.number-item.target{background:#F0F3EA;border-color:#B7C7B7;color:#416B4E}
+.number-item.lit{background:var(--green);border-color:var(--green);color:white;transform:translateY(-4px);box-shadow:0 6px 9px #3F765921;animation:bounce .32s both}
+.number-item.marked{border-color:#C4B795;background:#F6F0E2;color:#7D5B30}
+.number-item.endpoint{outline:2px solid #D99B5A;outline-offset:1px}
+.number-item .tick{position:absolute;bottom:-12px;width:2px;height:8px;background:#B1B6A7}
+.big-equation{color:var(--green-deep);font-size:25px;font-weight:880;text-align:center;min-height:42px;letter-spacing:-.55px;margin-top:21px}
+.big-equation .plus{color:var(--orange)}
+.log-visual{height:74px;display:flex;overflow:hidden;position:relative;background:#D7AC77;border:2px solid #926B49;border-radius:10px;box-shadow:inset 0 3px 10px #6D48251A;margin:22px 0}
+.wood-piece{min-width:0;flex:1;background:repeating-linear-gradient(173deg,#DCB787 0,#DCB787 8px,#CF9F68 9px,#E2BC8F 16px);border-left:4px double #8F6546;display:grid;place-items:center;font-size:16px;font-weight:830;color:#624329;animation:grow .26s both}
+.wood-piece:first-child{border-left:0}
+.wood-caption{font-size:11px;color:#846B50;text-align:center;font-weight:700}
+.floor-list{display:flex;align-items:flex-end;flex-wrap:wrap;gap:9px;min-height:125px}
+.floor-item{position:relative;min-width:35px;max-width:62px;flex:1;height:62px;border:1px solid #C6D3C6;border-radius:10px;background:var(--white);display:grid;place-items:center;color:#647261;font-weight:830}
+.floor-item.visited{background:var(--green);border-color:var(--green);color:#fff}
+.floor-item:first-child{background:#E3EFE3;border-color:#BDD4C2;color:var(--green-deep)}
+.floor-item:last-child{border-color:#D5A566}
+.floor-arrow{position:absolute;top:-26px;left:50%;transform:translateX(-50%);color:var(--green);font-size:14px}
+.mini-logs{display:grid;gap:12px;margin:15px 0}
+.mini-log-row{display:flex;align-items:center;gap:10px}
+.mini-log-row button{flex-shrink:0}
+.mini-log{display:flex;flex:1;min-height:40px;background:#DCAA72;border:2px solid #926B49;border-radius:8px;overflow:hidden}
+.mini-segment{flex:1;min-width:0;background:repeating-linear-gradient(177deg,#D5A470 0,#D5A470 6px,#E0B888 7px,#D9A874 14px);border-right:3px double #9F754E;display:grid;place-items:center;font-size:11px;font-weight:830;color:#6C4D30}
+.mini-segment:last-child{border:0}
+.day-row{display:grid;grid-template-columns:75px minmax(0,1fr) 105px;gap:10px;align-items:center;padding:10px;background:var(--white);border:1px solid #E3E6DD;border-radius:10px;margin:10px 0}
+.day-row b{font-size:12px;color:#70675B}
+.call-strip{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.phone{background:#F1F0E8;border:1px solid #E0DED3;border-radius:6px;font-size:15px;padding:3px}
+.donut{font-size:16px;animation:grow .3s both}
+.color-cut-row{display:flex;align-items:center;gap:11px;background:var(--white);padding:10px;border:1px solid #E5E5DD;border-radius:10px;margin:9px 0}
+.dot-set{display:flex;gap:5px;flex-wrap:wrap}
+.dot{width:17px;height:17px;display:inline-block;border-radius:50%;box-shadow:inset 0 0 0 2px #FFFFFF60}
+.dot.red{background:#C76D62}.dot.blue{background:#68889D}.dot.green{background:#5B9171}
+.rod{display:flex;align-items:stretch;gap:0;height:40px;background:linear-gradient(180deg,#F1D8A9,#CEA97C);border:2px solid #A78D6B;border-radius:11px;margin:18px 0}
+.rod-section{flex:1;min-width:0;display:grid;place-items:center;border-right:3px solid #9B7654;color:#886E4D;font-size:11px;font-weight:830}
+.rod-section:last-child{border:0}
+.micro-quiz{background:#FAF8F4;border:1px solid var(--line);border-radius:14px;margin-top:18px;padding:24px}
+.micro-heading{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--orange);font-weight:850}
+.micro-quiz h3{font-size:17px;line-height:1.6;font-weight:800;margin:11px 0 16px;color:var(--ink)}
+.answer-row{display:flex;align-items:stretch;gap:9px;flex-wrap:wrap}
+.answer-input{max-width:100%;width:135px;min-height:42px;background:#fff;border:1px solid #D5CEC4;color:var(--ink);border-radius:10px;padding:10px 12px;text-align:center;font-size:16px;font-weight:800;outline:none;font-variant-numeric:tabular-nums}
+.answer-input:focus{border-color:var(--green);box-shadow:0 0 0 3px #3F765921}
+.feedback{display:none;background:#F4F1EB;color:#60584C;padding:12px 14px;border-radius:10px;margin-top:13px;font-size:13px;line-height:1.7}
+.feedback.show{display:block}
+.feedback.good{background:#EDF5EE;border:1px solid #CFE2D1;color:#2F6545}
+.feedback.bad{background:var(--redbg);border:1px solid #E9CEC9;color:#984B45}
+.feedback.help{background:#F9F1E4;border:1px solid #ECDCC2;color:#7F5C37}
+.footer-nav{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-top:20px}
+.source-banner{border:1px solid #DDDCCA;border-radius:12px;background:#F7F5EB;padding:15px 19px;font-size:13px;color:#746B58;margin-bottom:20px;line-height:1.7}
+.source-banner strong{color:var(--green-deep)}
+.section-tools{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin:16px 0 19px}
+.filter{border:1px solid var(--line);border-radius:10px;background:var(--white);color:var(--ink);min-height:43px;padding:9px 12px;font-size:13px;font-weight:750;max-width:100%}
+.stat-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.mini-stat{border:1px solid var(--line);border-radius:10px;padding:9px 13px;background:var(--white);color:var(--muted);font-size:12px;font-weight:720}
+.mini-stat strong{color:var(--green-deep);font-size:18px;font-weight:850;margin-right:6px}
+.problem-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.problem-card{min-width:0;display:flex;flex-direction:column;gap:12px;scroll-margin-top:22px;border:1px solid var(--line);border-radius:15px;background:var(--white);padding:22px;box-shadow:var(--shadow)}
+.problem-card.solved{background:#FCFFFB;border-color:#BDDAC2}
+.problem-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.problem-index{display:inline-flex;gap:7px;align-items:center;font-size:13px;color:var(--green-deep);font-weight:860;white-space:nowrap}
+.problem-label{background:#F5F1EA;color:#857C6F;font-size:10px;font-weight:770;line-height:1.4;border-radius:9px;padding:6px 9px;text-align:right}
+.problem-text{font-size:14px;line-height:1.75;color:var(--ink);font-weight:650;flex:1}
+.problem-card .answer-input{width:110px}
+.problem-card .answer-row{margin-top:4px}
+.problem-meta{color:#90877B;font-size:11px;font-weight:730;margin-top:1px}
+.details{margin-top:3px;border-top:1px dashed var(--line);padding-top:12px;color:var(--muted);font-size:13px}
+.details summary{cursor:pointer;color:var(--green);font-weight:800}
+.details p{margin:9px 0 0}
+.empty{padding:42px 22px;text-align:center;background:var(--white);border:1px solid var(--line);border-radius:14px;color:var(--muted)}
+.pagination{display:flex;justify-content:center;align-items:center;gap:8px;margin:22px 0;flex-wrap:wrap}
+.pagination .btn.active{background:var(--green);color:#fff;border-color:var(--green)}
+.rules-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:17px 0}
+.rule-card{border:1px solid var(--line);border-radius:15px;background:var(--white);padding:22px}
+.rule-card h3{font-size:17px;line-height:1.4;margin:0 0 9px;letter-spacing:-.3px}
+.rule-card p{font-size:13px;line-height:1.75;color:var(--muted);margin:0 0 9px}
+.rule-card code{display:block;white-space:normal;color:var(--green-deep);font-size:14px;font-weight:830;background:var(--greenbg);border-radius:9px;padding:10px 13px;margin:13px 0}
+.finish-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.finish-card{text-align:center;padding:24px}
+.finish-card strong{font-size:36px;letter-spacing:-1.4px;color:var(--green-deep);display:block;line-height:1.2}
+.finish-card span{font-size:12px;color:var(--muted);font-weight:770}
+.footnote{font-size:12px;line-height:1.8;color:var(--muted)}
+.lesson-completed{display:inline-flex;align-items:center;color:var(--green-deep);background:var(--greenbg);border:1px solid #D7E6D5;font-size:11px;font-weight:830;padding:7px 10px;border-radius:9px;white-space:nowrap}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.hidden{display:none!important}
+#printSheet{display:none}
+.toast{position:fixed;z-index:30;right:20px;bottom:20px;max-width:min(400px,calc(100vw - 36px));background:var(--green-deep);color:#fff;padding:12px 17px;border-radius:11px;font-size:13px;font-weight:760;box-shadow:0 10px 30px #2F58462A;opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .22s,transform .22s}
+.toast.show{opacity:1;transform:translateY(0)}
+@keyframes bounce{0%{transform:translateY(0) scale(.86)}60%{transform:translateY(-7px) scale(1.04)}100%{transform:translateY(-4px) scale(1)}}
+@keyframes grow{from{transform:scale(.65);opacity:0}to{transform:scale(1);opacity:1}}
+@media(max-width:1230px){.layout{grid-template-columns:225px minmax(0,1fr)}.main{padding:30px 26px 75px}.sidebar{padding:24px 13px}.concept-layout{grid-template-columns:1fr}.stage{min-height:290px}.problem-grid{grid-template-columns:1fr}.hero:before{right:-180px}}
+@media(max-width:780px){.layout{display:block}.sidebar{position:relative;top:auto;height:auto;overflow:visible;padding:14px 18px 8px;border-right:0;border-bottom:1px solid var(--line)}.brand{display:flex;margin:0;padding:0 0 12px;border-bottom:0}.brand-mark{width:36px;height:36px;flex-basis:36px;font-size:21px}.brand-name{font-size:21px}.brand-sub{font-size:9px}.nav-label,.sidebar-bottom{display:none}.nav-wrap{display:flex;flex-direction:row;gap:7px;overflow-x:auto;padding:3px 0 8px;scrollbar-width:thin}.nav-btn{flex:0 0 auto;width:auto;white-space:nowrap;padding:8px 10px;font-size:12px;gap:7px}.nav-icon{font-size:15px;width:23px;height:23px}.nav-count{display:none}.main{padding:22px 20px 60px}.topbar{margin-bottom:18px}.topbar .pill{display:none}.hero{min-height:0;padding:26px 25px}.hero h1{font-size:34px}.hero:after{opacity:.45}.hero-stat{font-size:10px}.page-head{align-items:flex-start}.page-head h2{font-size:25px}.lesson-shell{padding:21px}.lesson-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;padding-bottom:7px}.lesson-tab{flex-shrink:0}}
+@media(max-width:560px){body{font-size:15px}.main{padding:17px 12px 52px}.sidebar{padding:11px 12px 5px}.eyebrow{font-size:10px}.hero{padding:24px 20px;border-radius:16px;margin-bottom:25px}.hero h1{font-size:30px;line-height:1.19;letter-spacing:-1px}.hero p{font-size:14px}.hero-stats{gap:6px}.hero-stat{padding:6px 9px}.page-head{margin:24px 0 14px;flex-direction:column;gap:10px}.page-head h2{font-size:23px}.page-head p{font-size:13px}.lesson-shell{padding:16px}.lesson-title{font-size:22px}.lesson-intro{font-size:14px}.stage{min-height:245px;padding:16px;border-radius:12px}.stage h3{font-size:16px}.explanation{padding:17px}.explanation h3{font-size:15px}.counter-grid{gap:6px}.counter{padding:11px 4px}.counter b{font-size:21px}.counter small{font-size:9px}.number-item{flex-basis:37px;height:40px;font-size:12px}.micro-quiz{padding:17px}.micro-quiz h3{font-size:16px}.answer-input{width:105px}.btn{padding:10px 11px;min-height:41px}.day-row{grid-template-columns:1fr;gap:4px}.mini-log-row{flex-wrap:wrap}.mini-log-row .mini-log{min-width:140px}.section-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.section-tools .filter{width:100%}.section-tools .btn{width:100%}.problem-card{padding:17px}.problem-grid{gap:11px}.problem-label{font-size:9px;max-width:58%}.problem-text{font-size:14px}.rules-grid,.finish-grid{grid-template-columns:1fr}.rule-card{padding:19px}.footer-nav{align-items:stretch}.footer-nav .btn{flex:1}.floor-list{gap:5px}.floor-item{min-width:27px}.color-cut-row{flex-wrap:wrap}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+/* =========================================================
+   РЕПЕТ — ИНТЕРФЕЙС ПОД ФИРМЕННЫЙ SVG icon.svg
+   Исходные три краски: #FFFDFA / #3F7659 / #D55F27
+   Сохранены неизменными условия задач и JS-логика.
+   ========================================================= */
+:root{
+  --bg:#FAF7F2;--white:#FFFDFA;--ink:#2F2A24;--muted:#7A7168;
+  --green:#3F7659;--green-deep:#315F49;--greenbg:#EDF2EB;
+  --orange:#D55F27;--orangebg:#F9EDE4;
+  --red:#C76D62;--redbg:#FAEEEB;
+  --line:#E8E1D8;--soft:#F6F1E9;
+  --shadow:0 7px 30px rgba(48,57,42,.035);
+  --rad:16px
+}
+body{font-family:Inter,Manrope,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;line-height:1.6}
+.layout{grid-template-columns:252px minmax(0,1fr)}
+.sidebar{padding:25px 15px;background:#FFFDFA;border-right:1px solid var(--line)}
+.brand{gap:11px;padding:0 7px 23px;margin-bottom:15px;align-items:center}
+.brand-mark{display:block;flex:0 0 49px;width:49px;height:49px;border-radius:10px;background:#FFFDFA;overflow:hidden;box-shadow:0 0 0 1px #E8E1D8;color:inherit;letter-spacing:normal}
+.brand-mark:after{display:none!important}
+.brand-mark svg{display:block;width:100%;height:100%}
+.brand-name{font-size:28px;font-weight:850;line-height:1;letter-spacing:-1.35px}
+.brand-sub{margin-top:7px;color:#877E71;letter-spacing:.13em;font-size:9px;font-weight:790}
+.nav-label{padding:0 14px;color:#958D80;letter-spacing:.15em;font-size:10px}
+.nav-btn{position:relative;min-height:53px;padding:12px 11px 12px 13px;border:1px solid transparent;border-radius:10px;gap:10px;font-size:12.5px;color:#5B5850}
+.nav-btn .nav-icon{width:29px;height:29px;flex:0 0 29px;border:1px solid #EAE6DE;border-radius:9px;background:#F8F5EE;color:#7A776D;filter:none}
+.nav-btn .nav-icon svg{display:block;width:17px;height:17px;stroke:currentColor}
+.nav-btn.active{border-color:#D8E6DA;background:#EDF2EB;color:var(--green-deep)}
+.nav-btn.active:before{content:'';position:absolute;left:0;top:12px;bottom:12px;width:3px;background:#D55F27;border-radius:0 3px 3px 0}
+.nav-btn.active .nav-icon{background:#FFFDFA;color:#3F7659;border-color:#D1E2D4}
+.nav-btn:hover:not(.active){background:#F8F6F0}
+.nav-count{font-size:10px;background:#F8F5F0}
+.sidebar-bottom{border-radius:12px;padding:17px 15px 14px;background:#F8F5EF}
+.sidebar-bottom:before{content:'';display:block;width:23px;height:3px;border-radius:5px;background:var(--orange);margin-bottom:12px}
+.progress-track{height:6px;background:#E1DED4}
+.progress-fill{background:var(--green)}
+.main{max-width:1480px;padding:31px clamp(24px,4vw,61px) 82px}
+.topbar{margin-bottom:20px;align-items:center}
+.topbar-context{display:flex;flex-direction:column;gap:6px}
+.crumbs{font-size:11px;color:#9C948A;line-height:1.3;font-weight:640}
+.crumbs span{padding:0 5px;color:#C6BDAF}
+.eyebrow{font-size:10px;color:#3F7659;letter-spacing:.115em;line-height:1.5}
+.offline-dot{width:7px;height:7px;border-radius:50%;background:#3F7659}
+.topbar .pill{border-radius:9px;font-weight:700;font-size:11px}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) 202px;gap:26px;padding:20px;min-height:276px;border-radius:16px;margin-bottom:28px;box-shadow:var(--shadow);background:#FFFDFA}
+.hero:before,.hero:after{display:none}
+.hero-main{min-width:0;padding:19px 0 18px 21px;display:flex;flex-direction:column;justify-content:center}
+.hero-topline{font-size:10px;letter-spacing:.14em;color:var(--orange)}
+.hero-topline:before{border-radius:1px;width:16px;height:3px;background:var(--orange)}
+.hero h1{font-size:40px;line-height:1.13;letter-spacing:-1.9px;margin:12px 0 13px;font-weight:860;max-width:700px}
+.hero p{max-width:680px;font-size:14px;line-height:1.7;margin:0 0 21px}
+.hero h1 span{color:#D55F27!important}
+.hero-stats{gap:0;display:flex;align-items:center;flex-wrap:wrap}
+.hero-stat{border:0;border-right:1px solid #DDDCD5;border-radius:0;background:transparent;color:#655E52;font-size:11px;font-weight:710;padding:2px 11px;white-space:normal}
+.hero-stat:first-child{padding-left:0}
+.hero-stat:last-child{border-right:0}
+.hero-identity{position:relative;min-height:235px;border-radius:12px;background:#3F7659;color:#FFFDFA;padding:17px 17px 15px;display:flex;flex-direction:column;overflow:hidden;justify-content:space-between}
+.hero-identity:before{content:'';position:absolute;right:-33px;top:29px;width:124px;height:124px;border:16px solid #FFFFFF12;border-radius:30px;transform:rotate(-8deg)}
+.hero-identity-top{position:relative;z-index:1;display:flex;gap:7px;align-items:center;font-size:9px;font-weight:780;letter-spacing:.065em;color:#E5F0E5}
+.hero-mini-line{background:#D55F27;width:14px;height:4px;border-radius:2px}
+.hero-emblem{position:relative;z-index:1;width:68px;height:68px;padding:0;border-radius:12px;background:#FFFDFA;box-shadow:0 5px 17px #223C3121}
+.hero-emblem svg{width:100%;height:100%;display:block}
+.hero-id-text{position:relative;z-index:1;font-size:19px;font-weight:690;letter-spacing:-.55px;line-height:1.2}
+.hero-id-text b{color:#F5BB95;font-weight:870}
+.hero-identity-bottom{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid #FFFFFF3B;color:#D6E7DB;font-size:10px;font-weight:790;letter-spacing:.1em}
+.hero-identity-bottom span:last-child{font-size:21px;line-height:1;color:#FFFDFA}
+.page-head{margin-top:25px;margin-bottom:17px}
+.page-head h2{font-size:27px;letter-spacing:-.85px}
+.page-head p{font-size:13.5px}
+.card,.problem-card,.rule-card{box-shadow:var(--shadow);border-radius:16px}
+.lesson-shell{padding:25px 27px 25px;border-top:3px solid var(--green)}
+.lesson-top{margin-bottom:18px}
+.lesson-num{color:var(--orange)}
+.lesson-title{font-size:28px}
+.lesson-tabs{gap:7px;margin-bottom:14px}
+.lesson-tab{border-radius:10px;padding:9px 12px;font-weight:750}
+.lesson-tab.active{background:#3F7659;border-color:#3F7659;color:#FFFDFA}
+.lesson-tab.active:hover{background:#315F49}
+.concept-layout{grid-template-columns:minmax(0,1.38fr) minmax(240px,.92fr);gap:14px}
+.stage{min-height:347px;background:#F4F6F0;border-color:#DEE8DF;border-radius:12px;padding:23px}
+.stage:before{display:none}
+.stage:after{content:'';position:absolute;left:0;top:0;width:32px;height:3px;background:#D55F27;border-radius:0 0 4px 0}
+.explanation{border-radius:12px;padding:23px;background:#FFFDF9}
+.formula{border-radius:10px}
+.key-idea{border-radius:10px;background:#FFF4EA;border-color:#EDD7C3}
+.btn,.filter,.answer-input{border-radius:10px}
+.btn{font-weight:760}
+.btn-primary{background:#3F7659;border-color:#3F7659;color:white}
+.btn-primary:hover:not(:disabled){background:#315F49;border-color:#315F49}
+.btn-soft{background:#FFF3EB;border-color:#EED8C7;color:#A54F27}
+.counter{border-radius:10px}
+.counter b{color:#3F7659}
+.micro-quiz{border-radius:12px;background:#FFFDFA;box-shadow:inset 4px 0 0 #D55F27;padding:22px 23px 22px 26px}
+.micro-heading{color:#B85325}
+.problem-card{border-top:3px solid #E2EDE4}
+.problem-card.solved{border-top-color:#3F7659}
+.problem-index{color:var(--green)}
+.problem-label{border-radius:8px}
+.rule-card{border-top:3px solid #E2EDE4}
+.rule-card:nth-child(4n + 2){border-top-color:#F3D9C7}
+.rule-card code{border-radius:9px}
+.source-banner{border-left:3px solid #D55F27}
+.finish-card{border-top:3px solid #3F7659}
+.finish-card strong{color:#3F7659}
+.feedback.bad{border-left:3px solid #C76D62}
+.feedback.good{border-left:3px solid #3F7659}
+.feedback.help{border-left:3px solid #D55F27}
+.toast{background:#315F49}
+@media(max-width:1230px){
+ .layout{grid-template-columns:220px minmax(0,1fr)}
+ .concept-layout{grid-template-columns:1fr}
+ .hero{grid-template-columns:minmax(0,1fr) 173px;gap:10px}
+ .hero-main{padding-left:12px}
+ .hero-identity{min-height:220px}
+ .hero h1{font-size:34px}
+}
+@media(max-width:780px){
+ .layout{display:block}
+ .main{padding:20px 19px 58px}
+ .sidebar{padding:12px 17px 7px}
+ .brand{padding:0 0 9px;margin:0}
+ .brand-mark{width:39px;height:39px;flex-basis:39px;border-radius:9px}
+ .brand-name{font-size:23px}
+ .nav-btn{min-height:41px;font-size:12px;padding:7px 10px;white-space:nowrap}
+ .nav-btn .nav-icon{width:24px;height:24px;flex-basis:24px;border:0;background:transparent}
+ .nav-btn.active .nav-icon{background:transparent;border:0}
+ .nav-btn.active:before{top:8px;bottom:8px}
+ .hero{grid-template-columns:minmax(0,1fr) 148px;gap:10px;padding:15px;min-height:230px}
+ .hero-main{padding:12px 5px 12px 10px}
+ .hero h1{font-size:32px}
+ .hero-identity{padding:13px;min-height:205px}
+ .hero-emblem{width:55px;height:55px}
+ .hero-id-text{font-size:16px}
+ .hero-stat{font-size:10px}
+ .lesson-shell{padding:20px}
+}
+@media(max-width:560px){
+ .main{padding:16px 12px 53px}
+ .sidebar{padding:10px 12px 5px}
+ .hero{display:flex;flex-direction:column;gap:12px;padding:20px;margin-bottom:23px;border-radius:13px}
+ .hero-main{padding:2px 1px 0}
+ .hero h1{font-size:30px}
+ .hero-stats{gap:5px}
+ .hero-stat{border:1px solid #E8E1D8;padding:5px 8px!important;border-radius:8px;background:#F8F6F1}
+ .hero-identity{min-height:90px;display:grid;grid-template-columns:48px 1fr;align-items:center;gap:5px 13px;padding:13px 15px}
+ .hero-identity-top,.hero-identity-bottom{display:none}
+ .hero-emblem{grid-column:1;width:46px;height:46px}
+ .hero-id-text{grid-column:2;display:flex;flex-wrap:wrap;gap:0 6px;font-size:15px}
+ .hero-id-text br{display:none}
+ .hero-id-text b{margin-left:0}
+ .brand-sub{font-size:8px}
+ .nav-wrap{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;overflow:visible;padding:2px 0 8px}
+ .nav-btn{min-width:0;white-space:normal;width:100%;line-height:1.3;font-size:11px;gap:5px;padding:9px 7px}
+ .nav-btn .nav-icon{width:21px;height:21px;flex-basis:21px}
+ .nav-btn .nav-icon svg{width:16px;height:16px}
+ .crumbs{font-size:10px}
+ .page-head h2{font-size:24px}
+ .lesson-shell{padding:16px;border-top-width:3px}
+ .lesson-title{font-size:22px}
+ .stage{padding:16px}
+ .explanation{padding:16px}
+ .micro-quiz{padding:17px 15px 17px 19px}
+ .concept-layout{grid-template-columns:minmax(0,1fr)}
+}
+
+@media print{body{background:#fff;color:#000;font-family:Arial,sans-serif;font-size:11pt}.layout,.toast{display:none!important}#printSheet{display:block!important;padding:0 10mm}#printSheet h1{font-size:20pt;margin:0 0 6mm}#printSheet h2{font-size:14pt;margin-top:8mm}#printSheet .sheet-grid{display:grid;grid-template-columns:1fr 1fr;gap:7mm}#printSheet .sheet-item{break-inside:avoid;border-bottom:1px dotted #bbb;padding-bottom:8mm;margin-bottom:3mm}#printSheet .sheet-item strong{font-weight:bold}#printSheet .answerkey{break-before:page;font-size:10pt}#printSheet .answerkey p{line-height:1.9}#printSheet .sheet-meta{font-size:10pt;color:#444;margin-bottom:8mm}}
+
+
+/* ============================================================
+   РЕПЕТ — оформление рабочей области по предоставленному образцу
+   19 октября 2026. Только интерфейс: логика урока сохранена.
+   ============================================================ */
+:root {--bg:#FAF7F2; --white:#FFFDFA; --ink:#2F2A24; --muted:#7A7168;
+  --green:#3F7659; --green-deep:#315F49; --greenbg:#EDF2EB;
+  --orange:#D55F27; --line:#E8E1D8; --rad:16px;
+  --shadow:0 12px 34px rgba(57,48,33,.028)}
+body{font-family:Manrope,Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
+  line-height:1.67; background:var(--bg)}
+.sidebar{background:#FFFDFA}
+.brand-name{font-size:29px;letter-spacing:-1.25px}
+.brand-sub{font-size:10px;letter-spacing:.14em;color:#857969}
+.brand-mark{border-radius:12px}
+.nav-wrap{gap:9px}
+.nav-btn{border-radius:11px;transition:background-color .15s,border-color .15s;color:#5D584E}
+.nav-btn.active{background:#EDF2EB;border:1px solid #C6D9C7;color:#315F49;
+  outline:2px solid #CB9861;outline-offset:3px;box-shadow:inset 0 0 0 2px #FFFDFA}
+.nav-btn.active:before{background:#D55F27;left:0;top:13px;bottom:13px;width:4px;border-radius:1px 3px 3px 1px}
+.nav-btn.active .nav-icon{background:#FFFDFA;border-color:#D8E5D8}
+.nav-btn[data-view="learn"]>span:nth-child(2),.nav-btn[data-view="practice"]>span:nth-child(2){max-width:112px}
+.nav-btn:hover:not(.active){background:#F3F1EA;border-color:#E8E1D8}
+.sidebar-bottom{background:#F7F4EF;border-radius:13px}
+.progress-track{height:7px}
+.page-head h2{letter-spacing:-.85px;font-weight:850}
+.page-head p{color:#7A7168}
+.lesson-tabs{gap:8px}
+.lesson-tab{min-height:42px;padding:10px 13px;font-size:12px;background:#FFFDFA;border:1px solid #E8E1D8}
+.lesson-tab.active{background:#3F7659;border-color:#3F7659;color:#fff;box-shadow:0 2px 5px #315F4910}
+.lesson-tab:hover:not(.active){background:#F5F2EB;border-color:#D6CBBD}
+.lesson-shell{border:1px solid #E8E1D8;border-top:3px solid #3F7659;
+  border-radius:16px;box-shadow:0 15px 38px #392F2410}
+.lesson-num{font-size:11px;color:#D55F27;letter-spacing:.125em}
+.lesson-title{font-weight:855;letter-spacing:-.95px}
+.lesson-intro{color:#7A7168}
+.stage{background:#F3F6F0;border-color:#DCE7DC;border-radius:12px}
+.stage h3{font-size:18px;font-weight:840;letter-spacing:-.35px}
+.stage p{font-size:13.5px;line-height:1.75}
+.explanation{background:#FFFDFA;border:1px solid #E8E1D8;border-radius:12px}
+.explanation h3{font-weight:820}
+.formula{background:#EDF2EB;border:1px solid #D2E3D4;color:#315F49;
+  font-size:20px;font-weight:840;min-height:68px;display:flex;align-items:center;justify-content:center}
+.key-idea{background:#FFF4EA;border-color:#EDD6BE;color:#915029}
+.lab-note{background:#FFFDFA;border-color:#DFE5D9}
+.btn{min-height:43px;font-size:12px;font-weight:790}
+.btn-primary{background:#3F7659;border-color:#3F7659;color:#fff}
+.btn-primary:hover:not(:disabled){background:#315F49;border-color:#315F49}
+.counter{border:1px solid #E0E5DD;border-radius:10px;background:#FFFDFA}
+.counter b{font-size:27px;color:#3F7659}
+.counter small{font-size:10px;letter-spacing:.045em;color:#817869}
+.counter-grid{margin-top:18px;gap:9px}
+.log-visual{height:78px;margin-top:20px;margin-bottom:23px;border-radius:10px}
+.lab-controls{margin-top:15px;margin-bottom:14px}
+.micro-quiz{margin-top:19px;border:1px solid #E8E1D8;
+  box-shadow:inset 4px 0 0 #D55F27;border-radius:12px;background:#FFFDFA}
+.micro-heading{letter-spacing:.11em;color:#BC4F23}
+.micro-quiz h3{font-size:17px;letter-spacing:-.15px}
+.lesson-completed{background:#EDF2EB;border:1px solid #D5E4D5;color:#315F49;font-size:12px}
+.problem-card,.rule-card{background:#FFFDFA;border-color:#E8E1D8}
+.problem-card:hover,.rule-card:hover{border-color:#D9D3C7}
+.source-banner{background:#F9F7F1}
+::selection{background:#CFE2D1;color:#315F49}
+@media(min-width:1231px){
+  .layout{grid-template-columns:268px minmax(0,1fr)}
+  .sidebar{padding:26px 16px 26px}
+  .brand{gap:12px;padding:0 7px 24px;margin-bottom:18px}
+  .brand-mark{flex-basis:54px;width:54px;height:54px}
+  .brand-name{font-size:29px}
+  .nav-label{margin-top:10px;margin-bottom:13px}
+  .nav-btn{min-height:56px;padding:13px 12px 13px 13px;font-size:12.5px}
+  .nav-btn:first-child{min-height:64px}
+  .sidebar-bottom{padding:21px 16px 19px}
+  .main{max-width:1480px;padding:31px clamp(24px,4vw,61px) 82px}
+  .page-head{margin-bottom:18px}
+  .page-head h2{font-size:29px}
+  .lesson-tabs{margin-bottom:15px}
+  .lesson-shell{padding:29px}
+  .lesson-title{font-size:30px}
+  .concept-layout{grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr);gap:16px}
+  .stage{padding:25px;min-height:430px}
+  #view-learn:has([data-lesson="1"].active) .stage{min-height:504px}
+  .explanation{padding:25px}
+  .counter{padding:16px 8px}
+}
+@media(min-width:781px) and (max-width:1230px){
+  .sidebar{padding-top:25px}
+  .nav-btn.active{outline-offset:1px}
+  .stage{min-height:380px}
+  .concept-layout{grid-template-columns:1fr}
+  .lesson-shell{padding:25px}
+}
+@media(max-width:780px){
+  .sidebar{padding:12px 17px 8px}
+  .brand-mark{width:40px;height:40px;flex-basis:40px}
+  .brand-name{font-size:23px}
+  .brand-sub{font-size:8px}
+  .nav-btn{min-height:43px}
+  .nav-btn.active{outline:0;box-shadow:inset 0 0 0 1px #D4E2D6}
+  .nav-btn.active:before{top:8px;bottom:8px}
+  .concept-layout{grid-template-columns:1fr}
+  .stage{min-height:0}
+  .counter b{font-size:24px}
+  .log-visual{margin-top:20px}
+}
+@media(max-width:560px){
+  .sidebar{padding:11px 12px 5px}
+  .lesson-shell{padding:16px}
+  .stage{padding:16px}
+  .explanation{padding:16px}
+  .lesson-title{font-size:23px}
+  .lesson-tab{min-height:40px}
+  .btn{min-height:43px}
+  .counter-grid{gap:6px}
+  .counter{padding:12px 3px}
+  .counter b{font-size:21px}
+  .formula{min-height:60px;font-size:18px}
+}
+@media print{
+  .layout,.toast{display:none!important}
+  #printSheet{display:block!important}
+  .lesson-shell,.sidebar,.micro-quiz{box-shadow:none!important}
+}
+
+</style>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar" aria-label="Навигация по уроку">
+  <div class="brand"><div class="brand-mark" aria-label="Логотип Репет"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <rect width="48" height="48" rx="10" fill="#fffdfa"/>
+  <path d="M18 7h12c8.3 0 14 5.1 14 12.5S38.3 32 30 32h-4v9h-8V7Zm8 7.5v10h4c3.9 0 6-1.8 6-5s-2.1-5-6-5h-4Z" fill="#3f7659" fill-rule="evenodd"/>
+  <path d="M4 12.5a1 1 0 0 1 1.4-.9l8.6 4V41l-8.8-4.1A2 2 0 0 1 4 35.1V12.5Z" fill="#d55f27"/>
+</svg></div><div><div class="brand-name">Репет</div><div class="brand-sub">УЧИСЬ ПОНИМАТЬ</div></div></div>
+  <div class="nav-label">Разделы</div>
+  <div class="nav-wrap">
+    <button type="button" class="nav-btn active" data-view="learn"><span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v2m0 14v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M3 12h2m14 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/><circle cx="12" cy="12" r="4"/></svg></span><span>Урок с анимациями</span><span class="nav-count">7</span></button>
+    <button type="button" class="nav-btn" data-view="original"><span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5V5.5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2 2 2 0 0 1 2-2"/><path d="M8 8h7m-7 4h6"/></svg></span><span>8 задач из файла</span><span class="nav-count">8</span></button>
+    <button type="button" class="nav-btn" data-view="practice"><span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8m-8 4h4m-4 4h4m3 0 1.5 1.5L19 14"/></svg></span><span>Большой тренажёр</span><span class="nav-count" id="nav-practice-count">160+</span></button>
+    <button type="button" class="nav-btn" data-view="rules"><span class="nav-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg></span><span>Шпаргалка и итоги</span></button>
+  </div>
+  <div class="sidebar-bottom"><div class="tiny-caps">Твой прогресс</div><div class="progress-track"><div class="progress-fill" id="side-progress" style="width:0%"></div></div><div class="progress-text" id="side-progress-text">0 задач решено</div><button class="resetbtn" type="button" id="reset-progress">Сбросить прогресс</button></div>
+</aside>
+<main class="main">
+  <div class="topbar"><div class="topbar-context"><span class="crumbs">Главное <span aria-hidden="true">/</span> Задания <span aria-hidden="true">/</span> Математика</span><span class="eyebrow" id="section-eyebrow">ОЛИМПИАДНАЯ МАТЕМАТИКА • 4–7 КЛАСС</span></div><span class="pill"><span class="offline-dot" aria-hidden="true"></span> Работает без интернета</span></div>
+  <header class="hero"><div class="hero-main"><div class="hero-topline">СЕРИЯ 1 / УЧИМСЯ ДУМАТЬ</div><h1>Эффект плюс-минус один <span style="opacity:.92">±1</span></h1><p>Почему 5 деревьев образуют 4 промежутка? Почему 20 распилов дают 21 кусочек? Узнай секрет, потрогай анимации, а потом реши задачи сам.</p><div class="hero-stats"><span class="hero-stat">🎬 7 наглядных опытов</span><span class="hero-stat">📚 8 задач из исходника</span><span class="hero-stat" id="hero-practice">✏️ 160+ тренировочных задач</span><span class="hero-stat">✅ Проверка каждого ответа</span></div></div><div class="hero-identity" aria-hidden="true"><div class="hero-identity-top"><span class="hero-mini-line"></span><span>репет / математика</span></div><div class="hero-emblem"><svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <rect width="48" height="48" rx="10" fill="#fffdfa"/>
+  <path d="M18 7h12c8.3 0 14 5.1 14 12.5S38.3 32 30 32h-4v9h-8V7Zm8 7.5v10h4c3.9 0 6-1.8 6-5s-2.1-5-6-5h-4Z" fill="#3f7659" fill-rule="evenodd"/>
+  <path d="M4 12.5a1 1 0 0 1 1.4-.9l8.6 4V41l-8.8-4.1A2 2 0 0 1 4 35.1V12.5Z" fill="#d55f27"/>
+</svg></div><div class="hero-id-text"><span>Понимай.</span><br><span>Пробуй.</span><br><b>Решай.</b></div><div class="hero-identity-bottom"><span>01</span><span>± 1</span></div></div></header>
+  <section id="view-learn" class="view">
+    <div class="page-head"><div><h2>Сначала пойми — потом решай</h2><p>Выбирай опыт, нажимай на кнопки и смотри, как появляется ответ. Затем реши маленькую задачу.</p></div><span class="pill" id="lesson-score">0 / 7 опытов пройдено</span></div>
+    <div class="lesson-tabs" id="lesson-tabs"></div>
+    <div class="card lesson-shell"><div class="lesson-top"><div><div class="lesson-num" id="lesson-num"></div><h2 class="lesson-title" id="lesson-title"></h2><p class="lesson-intro" id="lesson-intro"></p></div><span class="lesson-completed hidden" id="lesson-done">✓ Пройдено</span></div>
+      <div class="concept-layout"><div class="stage" id="lab-stage"></div><div class="explanation" id="lab-explanation"></div></div>
+      <div class="micro-quiz" id="lesson-quiz"></div>
+      <div class="footer-nav"><button class="btn" id="prev-lesson">← Предыдущий опыт</button><button class="btn btn-primary" id="next-lesson">Следующий опыт →</button></div>
+    </div>
+  </section>
+  <section id="view-original" class="view hidden">
+    <div class="page-head"><div><h2>Задачи из твоего PDF</h2><p>Все 8 задач серии «Эффект ±1» — с самостоятельной проверкой и объяснениями.</p></div><span class="pill" id="original-score">0 из 8 решено</span></div>
+    <div class="source-banner"><strong>Откуда задачи:</strong> «Математический кружок “Школково”», 1-й год обучения, серия 1, эффект ±1, страницы 3–6. Решения адаптированы для самостоятельного разбора.</div>
+    <div class="problem-grid" id="original-list"></div>
+  </section>
+  <section id="view-practice" class="view hidden">
+    <div class="page-head"><div><h2>Большой тренажёр</h2><p>Начни с простых номеров. Дальше будут задачи на несколько действий и олимпиадные ловушки.</p></div><span class="pill" id="practice-score">0 решено</span></div>
+    <div class="stat-row" id="practice-stats"></div>
+    <div class="section-tools"><label class="sr-only" for="topic-filter">Выберите тему</label><select id="topic-filter" class="filter"></select><label class="sr-only" for="difficulty-filter">Выберите сложность</label><select class="filter" id="difficulty-filter"><option value="all">Любая сложность</option><option value="1">⭐ Легко</option><option value="2">⭐⭐ Средне</option><option value="3">⭐⭐⭐ Сложно</option></select><label class="sr-only" for="status-filter">Выберите статус</label><select class="filter" id="status-filter"><option value="all">Все задания</option><option value="unsolved">Ещё не решены</option><option value="solved">Уже решены</option></select><button class="btn btn-soft" id="random-task" type="button">🎲 Случайный номер</button><button class="btn" id="print-tasks" type="button">🖨️ Распечатать задания</button></div>
+    <div class="source-banner" id="practice-caption">Введи только число. Нажми «Проверить» или Enter. Если ошибёшься — получишь подсказку и сможешь попробовать ещё раз.</div>
+    <div class="problem-grid" id="practice-list"></div><div class="pagination" id="practice-pages"></div>
+  </section>
+  <section id="view-rules" class="view hidden">
+    <div class="page-head"><div><h2>Шпаргалка и мои результаты</h2><p>Здесь собраны все правила — без лишних формул и с примерами.</p></div></div>
+    <div class="finish-grid"><div class="card finish-card"><strong id="total-done">0</strong><span>задач решено</span></div><div class="card finish-card"><strong id="original-done">0 / 8</strong><span>задач из PDF</span></div><div class="card finish-card"><strong id="lessons-done">0 / 7</strong><span>проверочных заданий</span></div></div>
+    <div class="rules-grid">
+      <article class="rule-card"><h3>🔢 Числа от A до B включительно</h3><p>Считаем оба крайних числа. Начальное число тоже является предметом подсчёта.</p><code>B − A + 1</code><p>От 34 до 123: 123 − 34 + 1 = 90.</p></article>
+      <article class="rule-card"><h3>🪚 Распилы и части одного бревна</h3><p>Было одно целое бревно. Каждый новый распил добавляет ещё одну часть.</p><code>частей = распилов + 1</code><p>20 распилов дают 21 часть.</p></article>
+      <article class="rule-card"><h3>🏢 Промежутки между объектами</h3><p>Между первым и последним этажом промежутков на один меньше, чем этажей.</p><code>промежутков = объектов − 1</code><p>От первого этажа до 20-го — 19 подъёмов.</p></article>
+      <article class="rule-card"><h3>🪵 Если брёвен было несколько</h3><p>У каждого бревна есть одна изначальная часть.</p><code>частей = исходных брёвен + распилов</code><p>6 брёвен и 20 распилов: 26 частей.</p></article>
+      <article class="rule-card"><h3>🐾 Считаем через 2, 3, 4…</h3><p>Если числа идут с одинаковым шагом k, и оба крайних числа входят в ряд.</p><code>(последнее − первое) : k + 1</code><p>20, 22, …, 136: (136 − 20) : 2 + 1 = 59.</p></article>
+      <article class="rule-card"><h3>📞 Перерывы между звонками</h3><p>За каждый новый день появляется отдельная последовательность звонков. Перерывов на один меньше, чем звонков, в КАЖДЫЙ день.</p><code>перерывов = звонков − дней</code><p>125 звонков за 5 дней: 120 перерывов.</p></article>
+      <article class="rule-card"><h3>🌈 Кольца разного цвета</h3><p>Для каждого цвета сначала найди число разрезов: частей − 1. Сложи разрезы и прибавь 1 один раз.</p><code>(a − 1) + (b − 1) + (c − 1) + 1</code><p>10, 14, 20 частей: 9 + 13 + 19 + 1 = 42.</p></article>
+      <article class="rule-card"><h3>💡 Главный контрольный вопрос</h3><p>«Я считаю сами предметы или промежутки между ними?» Если предметы — часто нужно +1, если промежутки — часто −1. Но сначала разбери смысл задачи!</p><code>Нарисуй маленький пример и пересчитай</code><p>Это надёжнее, чем механически прибавлять единицу.</p></article>
+    </div>
+    <div class="card" style="padding:21px"><h3 style="margin:0 0 7px">Учителю и родителям</h3><p class="footnote" style="margin:0">Рекомендуемый порядок: 7 опытов → исходные задачи № 1–8 → тренажёр по темам → смешанные сложные задачи. Разрешайте ребёнку двигать элементы и ошибаться. Если неверно, предложите нарисовать ряд из 3–5 предметов и проверить формулу. Учебный HTML работает без установки и без интернета; статистика хранится только в этом браузере на этом устройстве.</p></div>
+  </section>
+  <p class="footnote" style="margin:22px 5px 0">Разработано по теме «Эффект ±1» (серия 1, 1-й год) из приложенного методического материала. Дополнительные задания составлены специально для тренировки; они не являются дословными заданиями из PDF.</p>
+</main>
+</div>
+<div id="printSheet" aria-hidden="true"></div><div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const TOPICS=[['range','🔢 Числа подряд'],['gaps','📏 Промежутки'],['cuts','🪚 Распилы'],['several','🪵 Несколько брёвен'],['steps','🐾 Через несколько'],['breaks','📞 Перерывы'],['rings','🌈 Цветные разрезы'],['mixed','🏆 Олимпиадные задачи']];
+const topicLabel=id=>TOPICS.find(t=>t[0]===id)?.[1]||id;
+const LESSONS=[
+ {name:'Числа от A до B',short:'Числа',intro:'Когда считаем подряд идущие номера, первое число тоже нужно посчитать!',check:'Номера мышат идут подряд от 34 до 123 включительно. Сколько мышат?',answer:90,hint:'Посчитай: 123 − 34. Это число шагов между номерами. Чтобы посчитать самих мышат, добавь ещё первого.',solution:'123 − 34 + 1 = 90. Мы посчитали и мышонка № 34, и мышонка № 123.'},
+ {name:'Один распил — одна новая часть',short:'Распилы',intro:'Начинаем с одного целого бревна. Нажимай на пилу и смотри, что меняется.',check:'Бурундучки сделали 20 распилов одного бревна. Сколько частей получилось?',answer:21,hint:'Перед первым распилом бревно уже было одно. Каждый распил прибавляет одну часть.',solution:'1 + 20 = 21 часть. Количество частей на 1 больше количества распилов.'},
+ {name:'Промежутков меньше, чем предметов',short:'Этажи',intro:'Этажи — это точки остановки, а минуты тратятся на дорогу между ними.',check:'С 1-го на 2-й этаж поднимаются за 1 минуту. Сколько минут нужно с 1-го до 20-го этажа?',answer:19,hint:'Переход 1→2 — первый. А последний — 19→20. Всего переходов на 1 меньше, чем этажей.',solution:'20 − 1 = 19 переходов. Каждый по минуте, значит, 19 минут.'},
+ {name:'Считаем через одно',short:'Шаг 2 или 3',intro:'В ряду 20, 22, 24, ... шаг равен 2. Если разделить расстояние на шаг, получим количество ПЕРЕХОДОВ.',check:'Сколько чётных чисел от 20 до 136 включительно?',answer:59,hint:'Разность концов раздели на 2. Получишь количество шагов, но первое число тоже нужно учесть.',solution:'(136 − 20) : 2 + 1 = 58 + 1 = 59 чётных чисел.'},
+ {name:'Несколько брёвен одновременно',short:'Несколько брёвен',intro:'Если целых брёвен было несколько, у каждого уже есть по одной части.',check:'Изначально было несколько брёвен. После 20 распилов получили 26 частей. Сколько брёвен было?',answer:6,hint:'Каждый распил добавил одну часть. Значит, исходных брёвен было столько, сколько 26 − 20.',solution:'26 − 20 = 6 брёвен. Проверка: 6 + 20 = 26 частей.'},
+ {name:'Перерывы между событиями',short:'Перерывы',intro:'В каждом отдельном дне между звонками на один перерыв меньше, чем звонков.',check:'За 5 дней сделали 125 звонков. Между звонками каждого дня съедали по одному пончику. Сколько пончиков съели?',answer:120,hint:'За один день звонков на 1 больше, чем перерывов. Значит, за 5 дней вычитаем не 1, а 5.',solution:'125 − 5 = 120 пончиков. Между разными рабочими днями перерывы не считаются.'},
+ {name:'Цветные кольца и много разрезов',short:'Цветные кольца',intro:'Из количества частей каждого цвета сначала восстанавливаем число разрезов.',check:'Если резать только по красным кольцам, будет 10 частей; по синим — 14; по зелёным — 20. Сколько частей получится, если резать по всем?',answer:42,hint:'Красных разрезов 9, синих 13, зелёных 19. Сложи разрезы и добавь 1 для исходного жезла.',solution:'(10 − 1) + (14 − 1) + (20 − 1) + 1 = 9 + 13 + 19 + 1 = 42.'}
+];
+const ORIGINAL=[
+ {id:'o-1',group:'original',num:1,topic:'range',level:1,text:'Крош, поедая мороженое, считал проходящих мышат. На футболке первого был номер 34, второго — 35, следующего — 36 и так далее, а у последнего — 123. Сколько мышат насчитал Крош?',answer:90,hint:'Первого мышонка № 34 тоже нужно посчитать. Не забудь +1.',solution:'123 − 34 + 1 = 90 мышат.'},
+ {id:'o-2',group:'original',num:2,topic:'cuts',level:2,text:'Бурундучки закрепили очень длинное бревно с двух сторон. После распилов 30 поленьев упали, а 2 крайних остались закреплёнными. Сколько всего распилов сделали?',answer:31,hint:'После работы всего стало 30 + 2 частей. Распилов на одну меньше.',solution:'30 + 2 = 32 части. Распилов 32 − 1 = 31.'},
+ {id:'o-3',group:'original',num:3,topic:'several',level:2,text:'Бурундучки пилили несколько брёвен. После 20 распилов получилось 26 частей. Сколько брёвен было изначально?',answer:6,hint:'Каждый распил увеличил общее число частей ровно на 1.',solution:'26 − 20 = 6 исходных брёвен.'},
+ {id:'o-4',group:'original',num:4,topic:'mixed',level:3,text:'Для дома нужно ровно 100 маленьких брёвнышек. Чтобы целиком распилить одно длинное бревно на короткие, требуется 10 распилов. Сколько распилов нужно сделать, если длинных брёвен достаточно?',answer:91,hint:'10 распилов дают 11 маленьких брёвнышек. Из 9 длинных получится 99 коротких за 90 распилов. Как получить сотое?',solution:'9 длинных брёвен дают 9 × 11 = 99 коротких за 9 × 10 = 90 распилов. Чтобы получить ещё одно короткое бревно, нужен один распил: 90 + 1 = 91.'},
+ {id:'o-5',group:'original',num:5,topic:'breaks',level:2,text:'За пять рабочих дней Лосяш сделал 125 звонков. Между соседними звонками в течение каждого дня он съедает один пончик, но в другое время не ест. Каждый день был хотя бы один звонок. Сколько пончиков съел Лосяш?',answer:120,hint:'В каждом дне на 1 перерыв меньше, чем звонков. Сколько всего рабочих дней?',solution:'На каждый из 5 дней приходится один «лишний» звонок. Значит, пончиков 125 − 5 = 120.'},
+ {id:'o-6',group:'original',num:6,topic:'gaps',level:1,text:'Нюша за 1 минуту поднимается с 1-го этажа на 2-й. Теперь её кабинет на 20-м этаже. Сколько минут займёт подъём с 1-го на 20-й при той же скорости?',answer:19,hint:'Количество лестничных переходов между этажами на 1 меньше количества этажей.',solution:'20 − 1 = 19 переходов, значит, 19 минут.'},
+ {id:'o-7',group:'original',num:7,topic:'rings',level:3,text:'По красным кольцам жезл можно разрезать на 10 частей, по синим — на 14, по зелёным — на 20. На сколько частей распадётся жезл, если разрезать его по кольцам всех трёх цветов?',answer:42,hint:'Сначала вычисли разрезы каждого цвета: 10−1, 14−1, 20−1.',solution:'Красных колец 9, синих 13, зелёных 19. Всего 41 разрез, значит, 42 части.'},
+ {id:'o-8',group:'original',num:8,topic:'steps',level:3,text:'За день в справочной побывало 148 человек. Копатыч посчитал 12-го посетителя, затем каждого третьего: 15-го, 18-го и так далее. Сколько посетителей он посчитал?',answer:46,hint:'Последним подходящим номером был 147. Посчитай номера 12, 15, …, 147 с шагом 3.',solution:'(147 − 12) : 3 + 1 = 45 + 1 = 46 посетителей.'}
+];
+const EXPLANATIONS={
+ range:['Считай оба края.','последний − первый + 1'],gaps:['Считай расстояния между соседями.','предметов − 1'],cuts:['Один распил создаёт одну новую часть.','частей = распилов + 1'],several:['У каждого исходного бревна уже есть 1 часть.','частей = брёвен + распилов'],steps:['Раздели разницу на шаг и учти первую точку.','(последний − первый) : шаг + 1'],breaks:['В каждом дне перерывов на 1 меньше.','перерывов = звонков − дней'],rings:['Для каждого цвета разрезов на 1 меньше, чем частей.','все разрезы + 1'],mixed:['Нарисуй маленький пример и найди, что считаешь.','проверь, где требуется +1 или −1']};
+const PRACTICE=[];
+function addTask(topic,level,text,answer,hint,solution){const num=PRACTICE.length+1;PRACTICE.push({id:'p-'+num,group:'practice',num,topic,level,text,answer,hint,solution})}
+function makeTasks(){
+ // 25 inclusive range tasks
+ for(let i=0;i<25;i++){const a=i<10?2+i*3:17+i*7;const b=a+5+(i*11%33);const names=['книг на полке','номеров у участников','домов с подряд идущими номерами','страниц в прочитанном отрывке','автобусных билетов'];const label=names[i%names.length];addTask('range',i<9?1:i<19?2:3,`Номера ${label} идут подряд от ${a} до ${b} включительно. Сколько всего номеров?`,b-a+1,`Не теряй первый номер ${a}: разница концов — количество переходов.`,`Чисел от ${a} до ${b}: ${b} − ${a} + 1 = ${b-a+1}.`)}
+ // 20 gap problems
+ for(let i=0;i<20;i++){const n=4+(i*7%34),v=i%4;let text,answer,hint,sol;if(v===0){text=`Вдоль дорожки посадили ${n} деревьев в один ряд. Сколько промежутков между соседними деревьями?`;answer=n-1;hint='Между 2 деревьями 1 промежуток. Между 3 деревьями — 2.';sol=`${n} − 1 = ${answer} промежутков.`}else if(v===1){text=`Между соседними столбами натянули ${n} пролётов провода. Сколько столбов потребовалось для одной прямой линии?`;answer=n+1;hint='На концах линии нужны два столба. Нарисуй два пролёта: столбов будет три.';sol=`${n} + 1 = ${answer} столбов.`}else if(v===2){text=`Лифт едет с 1-го этажа на ${n+1}-й. Сколько расстояний между этажами он проедет?`;answer=n;hint='С 1-го на 2-й — один переход; с 2-го на 3-й — второй.';sol=`(${n+1}) − 1 = ${answer} переходов.`}else{text=`Вдоль прямой тропы установили ${n} фонарей. Сколько отрезков дорожки получилось между соседними фонарями?`;answer=n-1;hint='Считаем не фонари, а промежутки между ними.';sol=`${n} − 1 = ${answer} отрезков.`}addTask('gaps',i<9?1:i<17?2:3,text,answer,hint,sol)}
+ // 24 cuts
+ for(let i=0;i<24;i++){let x=2+(i*5%38),mode=i%4;let text,answer,hint,sol;if(mode===0){text=`Одно бревно распилили ${x} раз. Сколько кусков получили?`;answer=x+1;hint='До начала работы был один кусок.';sol=`${x} + 1 = ${answer} кусок/куска/кусков.`}else if(mode===1){text=`После распилов одного длинного бревна получили ${x+2} частей. Сколько было распилов?`;answer=x+1;hint='Распилов всегда на один меньше, чем частей.';sol=`${x+2} − 1 = ${answer} распилов.`}else if(mode===2){text=`Из одного бревна хотят получить ${x+5} коротких одинаковых по длине кусочков. Сколько раз нужно пилить?`;answer=x+4;hint='Представь 3 кусочка: нужны только 2 распила.';sol=`${x+5} − 1 = ${answer} распила/распилов.`}else{text=`Бревно было закреплено за оба конца. После распилов упало ${x} средних частей, а две крайние остались закреплены. Сколько распилов сделали?`;answer=x+1;hint='Не забудь две закреплённые части. Сначала найди общее количество частей.';sol=`Частей ${x} + 2 = ${x+2}, распилов ${x+2} − 1 = ${answer}.`}addTask('cuts',i<9?1:i<19?2:3,text,answer,hint,sol)}
+ // 20 several logs
+ for(let i=0;i<20;i++){const logs=2+(i*3%11),cuts=5+(i*7%31),mode=i%4;let text,answer,hint,sol;if(mode===0){text=`Было ${logs} длинных брёвен. Всего сделали ${cuts} распилов, каждый раз разрезая одну часть надвое. Сколько частей стало?`;answer=logs+cuts;hint=`Было ${logs} частей до первого распила. Каждый распил добавляет одну.`;sol=`${logs} + ${cuts} = ${answer} частей.`}else if(mode===1){text=`Из ${logs} брёвен после всех распилов получили ${logs+cuts} частей. Сколько всего распилов сделали?`;answer=cuts;hint='Из конечного количества частей вычти исходное количество брёвен.';sol=`${logs+cuts} − ${logs} = ${answer} распилов.`}else if(mode===2){text=`После ${cuts} распилов получили ${logs+cuts} отдельных кусочков. Сколько было целых брёвен сначала?`;answer=logs;hint='Часть с самого начала уже была у каждого целого бревна.';sol=`${logs+cuts} − ${cuts} = ${answer} брёвен.`}else{const each=2+i%6;answer=logs*(each+1);text=`Было ${logs} брёвен. Каждое распилили ровно ${each} раза. Сколько частей получилось всего?`;hint=`У каждого бревна стало ${each} + 1 частей. Брёвен ${logs}.`;sol=`${logs} × (${each} + 1) = ${answer} частей.`}addTask('several',i<6?1:i<15?2:3,text,answer,hint,sol)}
+ // 25 regular-step tasks
+ for(let i=0;i<25;i++){const step=2+i%5,start=step*(2+i%13)+(i%2?1:0),count=4+(i*7%26),last=start+step*(count-1),extra=i%4===0?Math.min(step-1,1+i%step):0,limit=last+extra;let text;if(step===2&&start%2===0){text=`Нюша отметила все чётные номера от ${start} до ${limit} включительно: ${start}, ${start+step}, ${start+2*step}, … Сколько номеров отмечено?`}else{text=`Копатыч считает посетителей с номера ${start}, а затем через каждые ${step} номера: ${start}, ${start+step}, ${start+2*step}, … Последний посетитель за день имел номер ${limit}. Сколько посетителей попало в счёт?`}addTask('steps',i<8?1:i<19?2:3,text,count,`Посчитай, сколько шагов по ${step} помещается от ${start} до последнего подходящего числа (${last}). Первую точку тоже надо учесть.`,`Последний подходящий номер — ${last}. (${last} − ${start}) : ${step} + 1 = ${count}.`)}
+ // 16 call/break problems
+ for(let i=0;i<16;i++){const days=2+i%8,breaks=14+(i*11%87),total=breaks+days,mode=i%3;let text,answer,hint,sol;if(mode===0){text=`За ${days} дней было ${total} телефонных звонков. Между звонками в пределах каждого дня был один перерыв. Сколько всего перерывов?`;answer=breaks;hint=`Каждый из ${days} дней «забирает» 1 перерыв.`;sol=`${total} − ${days} = ${answer} перерывов.`}else if(mode===1){text=`За ${days} дней ученик сделал ${total} упражнений. Между соседними упражнениями каждого дня он отдыхал. Сколько раз он отдохнул?`;answer=breaks;hint='Не считай отдых между разными днями.';sol=`${total} − ${days} = ${answer} раз.`}else{text=`За ${days} дней Лосяш съел ${breaks} пончиков, по одному в перерывах между звонками каждого дня. Сколько звонков он сделал?`;answer=total;hint='В каждом дне звонков на 1 больше, чем пончиков.';sol=`${breaks} + ${days} = ${answer} звонков.`}addTask('breaks',i<5?1:i<12?2:3,text,answer,hint,sol)}
+ // 12 rod ring problems
+ for(let i=0;i<12;i++){const a=3+i,b=5+i*2,c=7+i*3,answer=a+b+c-2;addTask('rings',i<3?2:3,`Если разрезать один жезл только по красным кольцам, будет ${a} частей; только по синим — ${b}; только по зелёным — ${c}. Кольца разного цвета не совпадают. На сколько частей разделится жезл при разрезах по всем кольцам?`,answer,`Разрезов: красных ${a}-1, синих ${b}-1, зелёных ${c}-1. В конце добавь одну первоначальную часть.`,`(${a} − 1) + (${b} − 1) + (${c} − 1) + 1 = ${answer} частей.`)}
+ // 20 tricky multi-step problems
+ for(let i=0;i<20;i++){const mode=i%5;let text,answer,hint,sol;if(mode===0){const start=15+i*4,end=start+33+i;answer=end-start+1;text=`У Кроша серия билетов от № ${start} до № ${end}. Он отдал первый и последний билеты, а все остальные оставил. Сколько билетов у него осталось?`;answer-=2;hint='Сначала посчитай все номера включительно, а затем убери два крайних.';sol=`(${end} − ${start} + 1) − 2 = ${answer}.`}else if(mode===1){const n=12+i*2;answer=n-1;text=`Два соседа стоят в длинной очереди из ${n} человек. Каждый человек передаёт сообщение только следующему, начиная с первого. Сколько передач понадобится, чтобы сообщение дошло до последнего?`;hint='Передача происходит между соседними людьми.';sol=`${n} − 1 = ${answer} передач.`}else if(mode===2){const groups=3+i%4,cuts=12+i*2,parts=groups+cuts;answer=groups;text=`После ${cuts} распилов нескольких брёвен стало ${parts} частей. Сколько целых брёвен было до распилов?`;hint='Из конечного количества частей вычти все распилы.';sol=`${parts} − ${cuts} = ${answer}.`}else if(mode===3){const days=3+i%4,calls=35+i*6;answer=calls-days;text=`В течение ${days} отдельных дней прозвучало ${calls} звонков. Между соседними звонками каждого дня загоралась лампа. Сколько раз загоралась лампа?`;hint='У каждого дня свой первый звонок — перед ним промежутка ещё нет.';sol=`${calls} − ${days} = ${answer}.`}else{const start=8+i*3,step=3+i%3,count=13+i,last=start+(count-1)*step;answer=count;text=`На табло загорались номера ${start}, ${start+step}, ${start+2*step} и так далее до ${last}. Сколько раз загорелось табло?`;hint=`Разность ${last} − ${start} — это ${count-1} равных шагов. Не забудь первую вспышку.`;sol=`(${last} − ${start}) : ${step} + 1 = ${answer}.`}addTask('mixed',i<5?2:3,text,answer,hint,sol)}
+}
+makeTasks();
+// --- APPLICATION STATE ---
+const STORAGE_KEY='interactive_pm1_2026_v1';
+let progress={solved:{},attempts:{}};
+try{const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(saved&&typeof saved==='object')progress={solved:saved.solved||{},attempts:saved.attempts||{}}}catch(e){}
+let currentView='learn',currentLesson=0,currentPage=1;
+const PAGE_SIZE=12;
+const labState={range:{a:5,b:11,shown:0},cuts:{n:0},floors:{n:0},steps:{step:3,n:0},several:{cuts:[0,0,0]},breaks:{shown:[]},rings:{on:[]}};
+let animationId=null,toastTimer=null;
+function save(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(progress))}catch(e){}}
+function esc(t){return String(t).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')}
+function solved(id){return Boolean(progress.solved[id])}
+function countSolved(list){return list.filter(x=>solved(x.id)).length}
+function notification(s){const box=$('toast');box.textContent=s;box.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>box.classList.remove('show'),2400)}
+function stopAnimation(){if(animationId!==null){clearInterval(animationId);animationId=null}}
+function updateStats(){const lessonDone=LESSONS.filter((_,i)=>solved('c-'+i)).length,originalDone=countSolved(ORIGINAL),practiceDone=countSolved(PRACTICE),allDone=lessonDone+originalDone+practiceDone,allTotal=LESSONS.length+ORIGINAL.length+PRACTICE.length;
+ $('side-progress').style.width=(100*allDone/allTotal).toFixed(1)+'%';$('side-progress-text').textContent=`${allDone} из ${allTotal} заданий решено`;
+ $('lesson-score').textContent=`${lessonDone} / 7 опытов пройдено`;$('original-score').textContent=`${originalDone} из 8 решено`;$('practice-score').textContent=`${practiceDone} из ${PRACTICE.length} решено`;
+ $('total-done').textContent=allDone;$('original-done').textContent=originalDone+' / 8';$('lessons-done').textContent=lessonDone+' / 7';
+ $('practice-stats').innerHTML=`<div class="mini-stat"><strong>${PRACTICE.length}</strong> всего номеров</div><div class="mini-stat"><strong>${practiceDone}</strong> решено</div><div class="mini-stat"><strong>${PRACTICE.length-practiceDone}</strong> осталось</div>`;
+ $('nav-practice-count').textContent=PRACTICE.length;$('hero-practice').textContent=`✏️ ${PRACTICE.length} тренировочных задачи`;
+}
+function setView(v){if(!['learn','original','practice','rules'].includes(v))return;stopAnimation();currentView=v;document.querySelectorAll('.view').forEach(e=>e.classList.toggle('hidden',e.id!=='view-'+v));document.querySelectorAll('.nav-btn').forEach(e=>e.classList.toggle('active',e.dataset.view===v));$('section-eyebrow').textContent=({'learn':'ОЛИМПИАДНАЯ МАТЕМАТИКА • 4–7 КЛАСС','original':'ИСХОДНЫЕ ЗАДАЧИ • ШКОЛКОВО','practice':'ТРЕНИРУЕМСЯ • ОТ ПРОСТОГО К СЛОЖНОМУ','rules':'ГЛАВНОЕ ЗА 1 МИНУТУ'})[v];if(v==='learn')renderLesson();if(v==='original')renderOriginal();if(v==='practice')renderPractice();if(v==='rules')updateStats();window.scrollTo({top:0,behavior:'smooth'})}
+function ruleHtml(i){const items=[
+ ['<strong>Почему не просто 11 − 5?</strong> Разность показывает, сколько шагов между числами. Но число 5 — это уже первый предмет!','11 − 5 + 1 = 7','Нарисуй 5, 6, 7. От 5 до 7 два шага, но три числа.'],
+ ['<strong>До распила:</strong> одна часть. <strong>После 1 распила:</strong> две части. После 2 — три. После 3 — четыре.','частей = распилов + 1','Распилов не столько же, сколько частей. Частей всегда на одну больше.'],
+ ['Считай не этажи, а <strong>переходы между этажами</strong>. От 1 до 2 есть один переход, от 2 до 3 — ещё один.','переходов = последний этаж − первый этаж','Предметов может быть 8, а промежутков между соседними предметами — 7.'],
+ ['Когда каждый следующий номер больше предыдущего на одинаковое число, это <strong>шаг</strong>. Сначала найди количество шагов, потом прибавь стартовый элемент.','количество = (последний − первый) : шаг + 1','Если последнее число не попадает в ряд, сначала найди последнее подходящее число!'],
+ ['У каждого целого бревна уже есть одна часть. Каждый распил добавляет ещё одну. Поэтому для нескольких брёвен нельзя просто прибавить одну.','всего частей = исходных брёвен + всех распилов','Можно распределять распилы по брёвнам как угодно: каждый всё равно добавляет одну часть.'],
+ ['Между 4 звонками за день есть только 3 промежутка. Если дней несколько, <strong>новый день начинает новый ряд</strong>.','всего перерывов = всего звонков − количество дней','За 5 дней нужно вычесть 5, а не 1.'],
+ ['Если по красным разрезам получается 10 частей, это 9 красных разрезов. Так же для остальных цветов.','общие части = сумма разрезов + 1','Единицу за исходный жезл прибавляем только один раз, а не после каждого цвета.']
+ ];const x=items[i];return `<h3>Разбираемся без спешки</h3><p>${x[0]}</p><div class="formula">${x[1]}</div><div class="key-idea"><span style="font-size:21px">💡</span><span>${x[2]}</span></div><p style="margin-top:18px"><strong>Как заниматься:</strong> нажимай на кнопки слева, наблюдай за результатом и попробуй объяснить его своими словами. Потом сразу реши вопрос внизу.</p>`}
+function makeQuiz(i){const L=LESSONS[i],id='c-'+i;return `<div class="micro-heading">🎯 Твоя очередь · мини-проверка ${i+1} из 7</div><h3>${esc(L.check)}</h3><div class="answer-row"><label class="sr-only" for="input-${id}">Ответ числом</label><input type="text" inputmode="numeric" autocomplete="off" class="answer-input" id="input-${id}" data-answer-id="${id}" placeholder="Ответ" aria-label="Введи ответ числом"><button class="btn btn-primary" data-action="check" data-id="${id}">Проверить ✓</button><button class="btn" data-action="hint" data-id="${id}">💡 Подсказка</button><button class="btn" data-action="solution" data-id="${id}">📖 Объяснение</button></div><div id="feedback-${id}" role="status" aria-live="polite" class="feedback ${solved(id)?'show good':''}">${solved(id)?'✅ Уже решено! '+esc(L.solution):''}</div>`}
+function renderLesson(){stopAnimation();$('lesson-tabs').innerHTML=LESSONS.map((L,i)=>`<button class="lesson-tab ${currentLesson===i?'active':''}" data-lesson="${i}" aria-current="${currentLesson===i?'step':'false'}">${i+1}. ${esc(L.short)} ${solved('c-'+i)?'✓':''}</button>`).join('');const L=LESSONS[currentLesson];$('lesson-num').textContent=`ОПЫТ ${currentLesson+1} ИЗ 7`;$('lesson-title').textContent=L.name;$('lesson-intro').textContent=L.intro;$('lab-explanation').innerHTML=ruleHtml(currentLesson);$('lesson-quiz').innerHTML=makeQuiz(currentLesson);$('lesson-done').classList.toggle('hidden',!solved('c-'+currentLesson));$('prev-lesson').disabled=currentLesson===0;$('next-lesson').textContent=currentLesson===6?'Перейти к 8 задачам →':'Следующий опыт →';renderLab()}
+function clearLab(){stopAnimation();labState.range.shown=0;labState.cuts.n=0;labState.floors.n=0;labState.steps.n=0;labState.several.cuts=[0,0,0];labState.breaks.shown=[];labState.rings.on=[];renderLab()}
+const btn=(act,label,variant='')=>`<button class="btn ${variant}" type="button" data-lab-action="${act}">${label}</button>`;
+function renderLab(){let s='',v;switch(currentLesson){
+ case 0:{v=labState.range;const nums=[];for(let n=v.a;n<=v.b;n++)nums.push(`<div class="number-item target ${n-v.a<v.shown?'lit':''} ${(n===v.a||n===v.b)?'endpoint':''}">${n}</div>`);s=`<h3>🔢 Пересчитай настоящие числа</h3><p>Нажимай «Следующее число» и считай с первого, а не со второго.</p><div class="number-strip">${nums.join('')}</div><div class="counter-grid"><div class="counter"><b>${v.b-v.a}</b><small>ПЕРЕХОДОВ</small></div><div class="counter"><b>${v.shown}</b><small>ПОСЧИТАНО ЧИСЕЛ</small></div><div class="counter"><b>${v.b-v.a+1}</b><small>ЧИСЕЛ ВСЕГО</small></div></div><div class="lab-controls">${btn('range-next','+ Следующее число','btn-primary')}${btn('range-play','▶ Анимировать')}${btn('range-reset','↺ Сначала')}</div><div class="lab-controls">${btn('range-preset1','Числа 5–11','btn-soft')}${btn('range-preset2','Числа 8–14')}${btn('range-preset3','Числа 11–19')}</div><div class="lab-note">${v.shown===0?'Начни с '+v.a+': это уже <strong>первое</strong> число.':v.shown===v.b-v.a+1?`Готово! Чисел <strong>${v.b-v.a+1}</strong>, а шагов всего ${v.b-v.a}.`:`Посчитано <strong>${v.shown}</strong>. Следующее число ${v.a+v.shown}.`}</div>`;break;}
+ case 1:{v=labState.cuts;const pieces=Array.from({length:v.n+1},(_,i)=>`<div class="wood-piece">${i+1}</div>`).join('');s=`<h3>🪚 Волшебное бревно</h3><p>Каждый щелчок по кнопке «Распилить» делит один кусок на два. Кусочков становится на один больше.</p><div class="log-visual" aria-label="Части бревна">${pieces}</div><div class="wood-caption">Разделительные полоски обозначают распилы</div><div class="counter-grid"><div class="counter"><b>1</b><small>БЫЛО ЧАСТЕЙ</small></div><div class="counter"><b>${v.n}</b><small>РАСПИЛОВ</small></div><div class="counter"><b>${v.n+1}</b><small>СТАЛО ЧАСТЕЙ</small></div></div><div class="lab-controls">${btn('cut-add','🪚 Сделать распил','btn-primary')}${btn('cut-reset','↺ Новое бревно')}</div><div class="lab-note">${v.n===0?'Было <strong>1</strong> целое бревно, хотя распилов пока 0.':`После <strong>${v.n}</strong> распилов получилось <strong>${v.n+1}</strong> частей.`}</div>`;break;}
+ case 2:{v=labState.floors;const floors=Array.from({length:8},(_,i)=>`<div class="floor-item ${i<=v.n?'visited':''}">${i+1}${i>0&&i<=v.n?'<span class="floor-arrow">↑</span>':''}</div>`).join('');s=`<h3>🏢 Лифт поднимается</h3><p>Нажимай «На этаж выше» и считай <strong>переходы</strong>, а не этажи.</p><div class="floor-list">${floors}</div><div class="counter-grid"><div class="counter"><b>8</b><small>ЭТАЖЕЙ</small></div><div class="counter"><b>${v.n+1}</b><small>ТЕКУЩИЙ ЭТАЖ</small></div><div class="counter"><b>${v.n}</b><small>ПРОЙДЕНО ПЕРЕХОДОВ</small></div></div><div class="lab-controls">${btn('floor-up','↑ На этаж выше','btn-primary')}${btn('floor-play','▶ Подняться до конца')}${btn('floor-reset','↺ На 1-й этаж')}</div><div class="lab-note">${v.n===7?'8 этажей, но между 1-м и 8-м всего <strong>7 переходов</strong>.':`Мы на <strong>${v.n+1}-м</strong> этаже и уже прошли <strong>${v.n}</strong> переходов.`}</div>`;break;}
+ case 3:{v=labState.steps;const arr=[];for(let n=4;n<=25;n+=v.step)arr.push(n);const boxes=Array.from({length:22},(_,i)=>{const n=i+4,k=arr.indexOf(n);return `<div class="number-item ${k>=0?'marked':''} ${k>=0&&k<v.n?'lit':''}">${n}</div>`}).join('');s=`<h3>🐾 Прыгаем по числовой дорожке</h3><p>Начинаем с 4. Нажми «Следующий прыжок» — каждый раз попадаем на число через ${v.step}.</p><div class="number-strip">${boxes}</div><div class="counter-grid"><div class="counter"><b>${v.step}</b><small>ШАГ</small></div><div class="counter"><b>${v.n}</b><small>ОТМЕЧЕНО ЧИСЕЛ</small></div><div class="counter"><b>${arr.length}</b><small>ВСЕГО ЧИСЕЛ</small></div></div><div class="lab-controls">${btn('step-next','🐾 Следующий прыжок','btn-primary')}${btn('step-play','▶ Показать ряд')}${btn('step-reset','↺ Сначала')}</div><div class="lab-controls">${[2,3,4].map(k=>btn('step-'+k,`Шаг ${k}`,k===v.step?'btn-soft':'')).join('')}</div><div class="lab-note">${v.n===0?`Первое число — <strong>4</strong>. Оно уже считается, даже если мы ещё не прыгали.`:v.n===arr.length?`Всего <strong>${arr.length}</strong> чисел. Последнее — ${arr.at(-1)}.`:`Посчитано ${v.n}. Следующее подходящее число: <strong>${arr[v.n]}</strong>.`}</div>`;break;}
+ case 4:{v=labState.several;const cuts=v.cuts.reduce((a,b)=>a+b,0),parts=3+cuts;const rows=v.cuts.map((n,i)=>`<div class="mini-log-row"><div style="min-width:71px;font-size:12px;font-weight:900;color:#5b6780">Бревно ${i+1}</div><div class="mini-log">${Array.from({length:n+1},(_,k)=>`<span class="mini-segment">${k+1}</span>`).join('')}</div>${btn('several-'+i,'🪚 +1')}</div>`).join('');s=`<h3>🪵 Считаем части сразу трёх брёвен</h3><p>Пили любое бревно, сколько захочешь. Сравни количество распилов с общим количеством частей.</p><div class="mini-logs">${rows}</div><div class="counter-grid"><div class="counter"><b>3</b><small>БРЁВНА СНАЧАЛА</small></div><div class="counter"><b>${cuts}</b><small>РАСПИЛОВ</small></div><div class="counter"><b>${parts}</b><small>ЧАСТЕЙ СЕЙЧАС</small></div></div><div class="lab-controls">${btn('several-reset','↺ Вернуть 3 целых бревна')}</div><div class="lab-note">Было <strong>3</strong> части, сделали <strong>${cuts}</strong> распилов, получилось <strong>${parts}</strong> частей. Формула: 3 + ${cuts} = ${parts}.</div>`;break;}
+ case 5:{v=labState.breaks;const counts=[4,3,5],allCalls=counts.reduce((a,b)=>a+b,0),allBreaks=counts.reduce((a,b,i)=>a+(v.shown.includes(i)?b-1:0),0);const rows=counts.map((num,i)=>{const revealed=v.shown.includes(i);let cells='';for(let j=0;j<num;j++){if(revealed&&j>0)cells+='<span class="donut" aria-label="Пончик">🍩</span>';cells+='<span class="phone" aria-label="Звонок">📞</span>'}return `<div class="day-row"><b>День ${i+1}</b><div class="call-strip">${cells}</div>${revealed?`<b style="color:#168466">🍩 ${num-1} перер.</b>`:btn('breaks-'+i,'🍩 Показать паузы')}</div>`}).join('');s=`<h3>📞 Звонок — пончик — звонок</h3><p>Пончик можно съесть <strong>только между звонками одного дня</strong>. В начале и в конце дня пончик не появляется.</p>${rows}<div class="counter-grid"><div class="counter"><b>${allCalls}</b><small>ЗВОНКОВ</small></div><div class="counter"><b>3</b><small>РАБОЧИХ ДНЯ</small></div><div class="counter"><b>${allBreaks}${v.shown.length<3?'…':''}</b><small>НАЙДЕНО ПОНЧИКОВ</small></div></div><div class="lab-controls">${btn('breaks-all','🍩 Показать все','btn-primary')}${btn('breaks-reset','↺ Убрать пончики')}</div><div class="lab-note">${v.shown.length===3?`Все перерывы найдены: <strong>${allCalls} − 3 = 9</strong> пончиков.`:'Нажимай на каждый день и считай пончики между соседними телефонными звонками.'}</div>`;break;}
+ case 6:{v=labState.rings;const groups=[['red','Красные',3],['blue','Синие',4],['green','Зелёные',5]],total=v.on.reduce((s,k)=>s+groups.find(x=>x[0]===k)[2],0);const rows=groups.map(([key,label,count])=>`<div class="color-cut-row"><button class="btn ${v.on.includes(key)?'btn-green':'btn-soft'}" style="min-width:110px" data-lab-action="rings-${key}">${v.on.includes(key)?'✓':'+'} ${label}</button><div class="dot-set">${Array.from({length:count},()=>`<span class="dot ${key}" style="opacity:${v.on.includes(key)?1:.23}"></span>`).join('')}</div><strong style="margin-left:auto;font-size:12px;color:#5b6780">${count} разрезов</strong></div>`).join('');s=`<h3>🌈 Добавляй кольца разных цветов</h3><p>Нажми на цвет. Каждый разрез добавляет новую часть <strong>одного и того же жезла</strong>.</p>${rows}<div class="rod" aria-label="Жезл разделён на части">${Array.from({length:total+1},(_,i)=>`<span class="rod-section">${i+1}</span>`).join('')}</div><div class="counter-grid"><div class="counter"><b>1</b><small>ЖЕЗЛ В НАЧАЛЕ</small></div><div class="counter"><b>${total}</b><small>ВСЕХ РАЗРЕЗОВ</small></div><div class="counter"><b>${total+1}</b><small>ЧАСТЕЙ</small></div></div><div class="lab-controls">${btn('rings-all','🌈 Все три цвета','btn-primary')}${btn('rings-reset','↺ Целый жезл')}</div><div class="lab-note">${v.on.length===3?'3 + 4 + 5 = <strong>12 разрезов</strong>, значит, <strong>13 частей</strong>.':`Сейчас ${total} разрезов и ${total+1} частей. Начальный жезл считаем только один раз.`}</div>`;break;}
+} $('lab-stage').innerHTML=s}
+function animateAction(stepCallback,isDone){stopAnimation();if(isDone())return;stepCallback();animationId=setInterval(()=>{if(isDone()){stopAnimation();return}stepCallback()},390)}
+function onLabAction(action){if(!action)return;const v=currentLesson;switch(v){
+case 0:{const x=labState.range;if(action==='range-next'){stopAnimation();x.shown=Math.min(x.shown+1,x.b-x.a+1)}else if(action==='range-reset'){stopAnimation();x.shown=0}else if(action==='range-play'){animateAction(()=>{x.shown++;renderLab()},()=>x.shown>=x.b-x.a+1);return}else if(action.startsWith('range-preset')){stopAnimation();const n=Number(action.slice(-1));const vals=[[5,11],[8,14],[11,19]][n-1];x.a=vals[0];x.b=vals[1];x.shown=0}break;}
+case 1:{const x=labState.cuts;if(action==='cut-add')x.n=Math.min(x.n+1,12);if(action==='cut-reset')x.n=0;break;}
+case 2:{const x=labState.floors;if(action==='floor-up'){stopAnimation();x.n=Math.min(x.n+1,7)}if(action==='floor-reset'){stopAnimation();x.n=0}if(action==='floor-play'){animateAction(()=>{x.n++;renderLab()},()=>x.n>=7);return}break;}
+case 3:{const x=labState.steps;if(action==='step-next'){stopAnimation();x.n=Math.min(x.n+1,Math.floor((25-4)/x.step)+1)}if(action==='step-reset'){stopAnimation();x.n=0}if(action==='step-play'){animateAction(()=>{x.n++;renderLab()},()=>x.n>=Math.floor((25-4)/x.step)+1);return}if(action.startsWith('step-')&&/step-[234]/.test(action)){stopAnimation();x.step=Number(action.slice(-1));x.n=0}break;}
+case 4:{if(action==='several-reset')labState.several.cuts=[0,0,0];const m=/^several-([012])$/.exec(action);if(m&&labState.several.cuts.reduce((a,b)=>a+b,0)<18)labState.several.cuts[Number(m[1])]++;break;}
+case 5:{const x=labState.breaks;if(action==='breaks-reset')x.shown=[];if(action==='breaks-all')x.shown=[0,1,2];const m=/^breaks-([012])$/.exec(action);if(m&&!x.shown.includes(Number(m[1])))x.shown.push(Number(m[1]));break;}
+case 6:{const x=labState.rings;if(action==='rings-reset')x.on=[];else if(action==='rings-all')x.on=['red','blue','green'];else{const m=/^rings-(red|blue|green)$/.exec(action);if(m){if(x.on.includes(m[1]))x.on=x.on.filter(y=>y!==m[1]);else x.on.push(m[1])}}break;}
+}renderLab()}
+function getProblemById(id){if(/^c-[0-6]$/.test(id)){const i=Number(id.split('-')[1]);return {...LESSONS[i],id,group:'lesson',num:i+1}}return ORIGINAL.find(x=>x.id===id)||PRACTICE.find(x=>x.id===id)||null}
+function problemHtml(p){const isSolved=solved(p.id);return `<article class="problem-card ${isSolved?'solved':''}" data-problem-id="${p.id}"><div class="problem-head"><span class="problem-index">№ ${p.num} ${isSolved?'<span style="color:var(--green)">✓</span>':''}</span><span class="problem-label">${esc(topicLabel(p.topic))} · ${'⭐'.repeat(p.level)}</span></div><div class="problem-text">${esc(p.text)}</div><div class="answer-row"><label for="input-${p.id}" class="sr-only">Ответ на задачу № ${p.num}</label><input type="text" inputmode="numeric" autocomplete="off" placeholder="Число" class="answer-input" data-answer-id="${p.id}" id="input-${p.id}" aria-label="Ответ на задачу № ${p.num}"><button type="button" class="btn btn-primary" data-action="check" data-id="${p.id}">Проверить</button><button type="button" class="btn" data-action="hint" data-id="${p.id}" aria-label="Показать подсказку к задаче № ${p.num}">💡</button><button type="button" class="btn" data-action="solution" data-id="${p.id}" aria-label="Показать решение задачи № ${p.num}">📖</button></div><div id="feedback-${p.id}" class="feedback ${isSolved?'show good':''}" role="status" aria-live="polite">${isSolved?'✅ Правильно! '+esc(p.solution):''}</div><div class="problem-meta">${p.group==='original'?'Задача из прикреплённого PDF':'Дополнительный тренировочный номер'}</div></article>`}
+function setFeedback(id,type,html){const e=$('feedback-'+id);if(!e)return;e.className='feedback show '+type;e.innerHTML=html}
+function checkAnswer(id){const problem=getProblemById(id),input=$('input-'+id);if(!problem||!input)return;const raw=input.value.trim().replaceAll('−','-').replaceAll(' ','');if(!/^-?\d+$/.test(raw)){setFeedback(id,'help','✏️ Напиши ответ целым числом, например 12.');input.focus();return}const given=Number(raw);progress.attempts[id]=(progress.attempts[id]||0)+1;if(given===problem.answer){const first=!solved(id);progress.solved[id]=true;save();setFeedback(id,'good',`✅ <strong>Верно! Ответ: ${problem.answer}.</strong> ${esc(problem.solution)}`);const article=input.closest('.problem-card');if(article){article.classList.add('solved');const n=article.querySelector('.problem-index');if(n&&!n.textContent.includes('✓'))n.innerHTML+=` <span style="color:var(--green)">✓</span>`}updateStats();if(id.startsWith('c-')){$('lesson-done').classList.remove('hidden');renderLessonTabsOnly()}if(first)notification('🎉 Отлично! Задача решена.')}else{save();const tries=progress.attempts[id];setFeedback(id,'bad',`Пока не получилось. Твой ответ: <strong>${given}</strong>. ${tries>=2?'💡 '+esc(problem.hint):'Посмотри, что именно нужно посчитать: предметы или промежутки. Попробуй ещё раз!'}`)}}
+function renderLessonTabsOnly(){$('lesson-tabs').innerHTML=LESSONS.map((L,i)=>`<button class="lesson-tab ${currentLesson===i?'active':''}" data-lesson="${i}" aria-current="${currentLesson===i?'step':'false'}">${i+1}. ${esc(L.short)} ${solved('c-'+i)?'✓':''}</button>`).join('')}
+function useHelp(action,id){const p=getProblemById(id);if(!p)return;if(action==='hint')setFeedback(id,'help','💡 '+esc(p.hint));if(action==='solution')setFeedback(id,'help','📖 <strong>Разбор:</strong> '+esc(p.solution)+' <em style="display:block;margin-top:5px">Попробуй ввести ответ сам — только тогда задача отметится решённой.</em>')}
+function renderOriginal(){$('original-list').innerHTML=ORIGINAL.map(problemHtml).join('');updateStats()}
+function selectedTasks(){let list=PRACTICE.slice(),topic=$('topic-filter').value,diff=$('difficulty-filter').value,status=$('status-filter').value;if(topic!=='all')list=list.filter(p=>p.topic===topic);if(diff!=='all')list=list.filter(p=>p.level===Number(diff));if(status==='solved')list=list.filter(p=>solved(p.id));if(status==='unsolved')list=list.filter(p=>!solved(p.id));return list}
+function renderPractice(){const list=selectedTasks();const totalPages=Math.max(1,Math.ceil(list.length/PAGE_SIZE));currentPage=Math.min(Math.max(1,currentPage),totalPages);const start=(currentPage-1)*PAGE_SIZE;const slice=list.slice(start,start+PAGE_SIZE);$('practice-list').innerHTML=slice.length?slice.map(problemHtml).join(''):`<div class="empty" style="grid-column:1/-1">Заданий по этим фильтрам пока нет. Попробуй выбрать другую тему или статус.</div>`;
+ $('practice-caption').innerHTML=`Показаны номера <strong>${list.length?start+1:0}–${Math.min(start+PAGE_SIZE,list.length)}</strong> из <strong>${list.length}</strong> по выбранным фильтрам. Вводи целое число, затем нажимай «Проверить» или Enter. Кнопки 💡 и 📖 подскажут ход решения.`;
+ const pages=$('practice-pages');let arr=[];arr.push(`<button class="btn" data-page="${currentPage-1}" ${currentPage===1?'disabled':''}>← Назад</button>`);let selected=new Set([1,totalPages,currentPage-1,currentPage,currentPage+1]);let numbers=[...selected].filter(n=>n>=1&&n<=totalPages).sort((a,b)=>a-b);let prev=0;for(const n of numbers){if(prev&&n-prev>1)arr.push('<span style="padding:10px 2px">…</span>');arr.push(`<button class="btn ${currentPage===n?'active':''}" data-page="${n}" aria-current="${currentPage===n?'page':'false'}">${n}</button>`);prev=n}arr.push(`<button class="btn" data-page="${currentPage+1}" ${currentPage===totalPages?'disabled':''}>Дальше →</button>`);pages.innerHTML=arr.join('');updateStats()}
+function printTasks(){const tasks=currentView==='original'?ORIGINAL:selectedTasks();if(!tasks.length){notification('Нет заданий для печати — измени фильтры');return}const src=currentView==='original'?'Задачи из Школково':'Дополнительный тренажёр';$('printSheet').innerHTML=`<h1>Эффект ±1 — лист самостоятельной работы</h1><div class="sheet-meta">${src} · ${tasks.length} заданий · Имя: ________________________ · Дата: ______________</div><div class="sheet-grid">${tasks.map(p=>`<div class="sheet-item"><strong>№ ${p.num}.</strong> ${esc(p.text)}<p>Ответ: _______________________</p></div>`).join('')}</div>`;window.print()}
+function randomTask(){let list=selectedTasks();if(!list.length){notification('В выбранном фильтре нет задач');return}const pending=list.filter(x=>!solved(x.id));if(pending.length)list=pending;const chosen=list[Math.floor(Math.random()*list.length)];const all=selectedTasks();currentPage=Math.floor(all.findIndex(p=>p.id===chosen.id)/PAGE_SIZE)+1;renderPractice();const el=document.querySelector(`[data-problem-id="${chosen.id}"]`);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.style.outline='3px solid #d9c1ff';setTimeout(()=>el.style.outline='',1400)}}
+// --- EVENTS ---
+document.querySelectorAll('[data-view]').forEach(btn=>btn.addEventListener('click',()=>setView(btn.dataset.view)));
+$('lesson-tabs').addEventListener('click',e=>{const b=e.target.closest('[data-lesson]');if(b){currentLesson=Number(b.dataset.lesson);renderLesson()}});
+$('lab-stage').addEventListener('click',e=>{const b=e.target.closest('[data-lab-action]');if(b)onLabAction(b.dataset.labAction)});
+$('prev-lesson').addEventListener('click',()=>{if(currentLesson>0){currentLesson--;renderLesson();$('view-learn').scrollIntoView({behavior:'smooth'})}});
+$('next-lesson').addEventListener('click',()=>{if(currentLesson===6){setView('original')}else{currentLesson++;renderLesson();$('view-learn').scrollIntoView({behavior:'smooth'})}});
+document.addEventListener('click',e=>{const button=e.target.closest('[data-action]');if(!button)return;const id=button.dataset.id;if(button.dataset.action==='check')checkAnswer(id);else useHelp(button.dataset.action,id)});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches('input[data-answer-id]')){e.preventDefault();checkAnswer(e.target.dataset.answerId)}});
+$('topic-filter').innerHTML='<option value="all">Все темы</option>'+TOPICS.map(([id,label])=>`<option value="${id}">${label}</option>`).join('');
+['topic-filter','difficulty-filter','status-filter'].forEach(id=>$(id).addEventListener('change',()=>{currentPage=1;renderPractice()}));
+$('practice-pages').addEventListener('click',e=>{const b=e.target.closest('[data-page]');if(!b||b.disabled)return;currentPage=Number(b.dataset.page);renderPractice();$('view-practice').scrollIntoView({behavior:'smooth'})});
+$('random-task').addEventListener('click',randomTask);$('print-tasks').addEventListener('click',printTasks);
+$('reset-progress').addEventListener('click',()=>{if(!confirm('Удалить все правильные ответы и попытки с этого устройства?'))return;progress={solved:{},attempts:{}};save();updateStats();setView(currentView);notification('Прогресс сброшен')});
+updateStats();renderLesson();
+</script>
+</body>
+</html>

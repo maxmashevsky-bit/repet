@@ -2,15 +2,166 @@ openapi: 3.1.0
 info:
   title: Repet Core API
   version: 0.3.0
+  description: In production, unverified accounts may only read /me, verify/resend email or log out. Other authenticated endpoints return 403 email_unverified.
 servers:
   - url: /api/v1
 security:
   - session: []
 paths:
+  /teaching-preferences:
+    $ref: './teaching.yaml#/paths/~1teaching-preferences'
+  /tutor-planner:
+    $ref: './tutor-planner.yaml#/paths/~1api~1v1~1tutor-planner'
+  /tutor-planner/calendar:
+    $ref: './tutor-planner.yaml#/paths/~1api~1v1~1tutor-planner~1calendar'
+  /messages/conversations/{conversationID}/files:
+    $ref: './chat-attachments.yaml#/paths/~1messages~1conversations~1{conversationID}~1files'
+  /messages/conversations/{conversationID}/files/{fileID}:
+    $ref: './chat-attachments.yaml#/paths/~1messages~1conversations~1{conversationID}~1files~1{fileID}'
+  /messages/conversations/{conversationID}/references:
+    $ref: './chat-attachments.yaml#/paths/~1messages~1conversations~1{conversationID}~1references'
+  /messages/conversations/{conversationID}/assignments/{assignmentID}:
+    $ref: './chat-attachments.yaml#/paths/~1messages~1conversations~1{conversationID}~1assignments~1{assignmentID}'
+  /family/links:
+    $ref: './family.yaml#/paths/~1family~1links'
+  /family/invitations:
+    $ref: './family.yaml#/paths/~1family~1invitations'
+  /family/invitations/preview:
+    $ref: './family.yaml#/paths/~1family~1invitations~1preview'
+  /family/invitations/accept:
+    $ref: './family.yaml#/paths/~1family~1invitations~1accept'
+  /family/links/{linkID}/revoke:
+    $ref: './family.yaml#/paths/~1family~1links~1{linkID}~1revoke'
+  /family/children/{studentID}:
+    $ref: './family.yaml#/paths/~1family~1children~1{studentID}'
+  /family/children/{studentID}/read:
+    $ref: './family.yaml#/paths/~1family~1children~1{studentID}~1read'
+  /family/notes:
+    $ref: './family.yaml#/paths/~1family~1notes'
+  /family/students/{studentID}/notes:
+    $ref: './family.yaml#/paths/~1family~1students~1{studentID}~1notes'
+  /family/notes/{noteID}/withdraw:
+    $ref: './family.yaml#/paths/~1family~1notes~1{noteID}~1withdraw'
+  /learning-reviews/{studentID}:
+    $ref: './learning-reviews.yaml#/paths/~1learning-reviews~1{studentID}'
+  /learning-review-sessions:
+    $ref: './learning-reviews.yaml#/paths/~1learning-review-sessions'
+  /learning-review-sessions/{reviewID}:
+    $ref: './learning-reviews.yaml#/paths/~1learning-review-sessions~1{reviewID}'
+  /learning-review-checks:
+    $ref: './learning-reviews.yaml#/paths/~1learning-review-checks'
+  /learning-rewards/{studentID}:
+    $ref: './learning-rewards.yaml#/paths/~1learning-rewards~1{studentID}'
+  /learning-rewards/{studentID}/preference:
+    $ref: './learning-rewards.yaml#/paths/~1learning-rewards~1{studentID}~1preference'
+  /learning-analytics/students:
+    $ref: './learning-analytics.yaml#/paths/~1learning-analytics~1students'
+  /learning-analytics/{studentID}:
+    $ref: './learning-analytics.yaml#/paths/~1learning-analytics~1{studentID}'
+  /learning-analytics/{studentID}/repeat:
+    $ref: './learning-analytics.yaml#/paths/~1learning-analytics~1{studentID}~1repeat'
+  /exam-specifications:
+    $ref: './study.yaml#/paths/~1exam-specifications'
+  /exam-specifications/{specID}:
+    $ref: './study.yaml#/paths/~1exam-specifications~1{specID}'
+  /exam-specifications/{specID}/publish:
+    $ref: './study.yaml#/paths/~1exam-specifications~1{specID}~1publish'
+  /exam-specifications/{specID}/archive:
+    $ref: './study.yaml#/paths/~1exam-specifications~1{specID}~1archive'
+  /study-sessions:
+    $ref: './study.yaml#/paths/~1study-sessions'
+  /study-sessions/{sessionID}:
+    $ref: './study.yaml#/paths/~1study-sessions~1{sessionID}'
+  /study-reviews:
+    $ref: './study.yaml#/paths/~1study-reviews'
+  /exercise-bank:
+    $ref: './exercise-bank.yaml#/paths/~1exercise-bank'
+  /exercise-bank/facets:
+    $ref: './exercise-bank.yaml#/paths/~1exercise-bank~1facets'
+  /exercise-bank/{bankID}:
+    $ref: './exercise-bank.yaml#/paths/~1exercise-bank~1{bankID}'
+  /exercise-bank/{bankID}/answer-key:
+    $ref: './exercise-bank.yaml#/paths/~1exercise-bank~1{bankID}~1answer-key'
+  /bank-collections:
+    $ref: './exercise-bank.yaml#/paths/~1bank-collections'
+  /bank-collections/{collectionID}:
+    $ref: './exercise-bank.yaml#/paths/~1bank-collections~1{collectionID}'
+  /bank-collections/{collectionID}/assign:
+    $ref: './exercise-bank.yaml#/paths/~1bank-collections~1{collectionID}~1assign'
+  /assignments/material:
+    $ref: './material-assignments.yaml#/paths/~1assignments~1material'
+  /assignments/{assignmentID}:
+    $ref: './material-assignments.yaml#/paths/~1assignments~1{assignmentID}'
+  /assignments/{assignmentID}/repeat:
+    $ref: './material-assignments.yaml#/paths/~1assignments~1{assignmentID}~1repeat'
+  /assignments/{assignmentID}/learning-attempt:
+    $ref: './material-assignments.yaml#/paths/~1assignments~1{assignmentID}~1learning-attempt'
+  /assignments/{assignmentID}/learning-results:
+    $ref: './material-assignments.yaml#/paths/~1assignments~1{assignmentID}~1learning-results'
+  /exercise-sets:
+    $ref: './material-assignments.yaml#/paths/~1exercise-sets'
+  /exercise-sets/{setID}:
+    $ref: './material-assignments.yaml#/paths/~1exercise-sets~1{setID}'
+  /catalog/lessons/{learningLessonID}/learning-attempts:
+    $ref: './learning-progress.yaml#/paths/~1catalog~1lessons~1{learningLessonID}~1learning-attempts'
+  /catalog/lessons/{learningLessonID}/learning-attempts/{learningID}:
+    $ref: './learning-progress.yaml#/paths/~1catalog~1lessons~1{learningLessonID}~1learning-attempts~1{learningID}'
+  /catalog/lessons/{learningLessonID}/learning-attempts/{learningID}/answers:
+    $ref: './learning-progress.yaml#/paths/~1catalog~1lessons~1{learningLessonID}~1learning-attempts~1{learningID}~1answers'
+  /catalog/lessons/{learningLessonID}/learning-attempts/{learningID}/navigate:
+    $ref: './learning-progress.yaml#/paths/~1catalog~1lessons~1{learningLessonID}~1learning-attempts~1{learningID}~1navigate'
+  /catalog/lessons/{learningLessonID}/learning-attempts/{learningID}/exercises/{exerciseID}/solution:
+    $ref: './learning-progress.yaml#/paths/~1catalog~1lessons~1{learningLessonID}~1learning-attempts~1{learningID}~1exercises~1{exerciseID}~1solution'
+  /catalog/lessons/{learningLessonID}/learning-attempts/{learningID}/complete:
+    $ref: './learning-progress.yaml#/paths/~1catalog~1lessons~1{learningLessonID}~1learning-attempts~1{learningID}~1complete'
+  /catalog/lessons/{learningLessonID}/learning-attempts/{learningID}/exercises/{exerciseID}/hints:
+    $ref: './learning-progress.yaml#/paths/~1catalog~1lessons~1{learningLessonID}~1learning-attempts~1{learningID}~1exercises~1{exerciseID}~1hints'
+  /catalog/courses:
+    $ref: './learning-catalog.yaml#/paths/~1catalog~1courses'
+  /catalog/courses/{courseID}:
+    $ref: './learning-catalog.yaml#/paths/~1catalog~1courses~1{courseID}'
+  /catalog/courses/{courseID}/publish:
+    $ref: './learning-catalog.yaml#/paths/~1catalog~1courses~1{courseID}~1publish'
+  /catalog/courses/{courseID}/archive:
+    $ref: './learning-catalog.yaml#/paths/~1catalog~1courses~1{courseID}~1archive'
+  /catalog/courses/{courseID}/topics:
+    $ref: './learning-catalog.yaml#/paths/~1catalog~1courses~1{courseID}~1topics'
+  /catalog/topics/{topicID}:
+    $ref: './learning-catalog.yaml#/paths/~1catalog~1topics~1{topicID}'
+  /catalog/topics/{topicID}/publish:
+    $ref: './learning-catalog.yaml#/paths/~1catalog~1topics~1{topicID}~1publish'
+  /catalog/topics/{topicID}/archive:
+    $ref: './learning-catalog.yaml#/paths/~1catalog~1topics~1{topicID}~1archive'
+  /catalog/courses/{courseID}/lessons:
+    $ref: './learning-catalog.yaml#/paths/~1catalog~1courses~1{courseID}~1lessons'
+  /catalog/lessons:
+    $ref: './learning-catalog.yaml#/paths/~1catalog~1lessons'
+  /catalog/lessons/{learningLessonID}:
+    $ref: './learning-catalog.yaml#/paths/~1catalog~1lessons~1{learningLessonID}'
+  /catalog/lessons/{learningLessonID}/publish:
+    $ref: './learning-catalog.yaml#/paths/~1catalog~1lessons~1{learningLessonID}~1publish'
+  /catalog/lessons/{learningLessonID}/archive:
+    $ref: './learning-catalog.yaml#/paths/~1catalog~1lessons~1{learningLessonID}~1archive'
+  /catalog/lessons/{learningLessonID}/versions:
+    $ref: './learning-catalog.yaml#/paths/~1catalog~1lessons~1{learningLessonID}~1versions'
+  /catalog/lessons/{learningLessonID}/versions/{number}:
+    $ref: './learning-catalog.yaml#/paths/~1catalog~1lessons~1{learningLessonID}~1versions~1{number}'
+  /catalog/lessons/{learningLessonID}/exercises:
+    $ref: './learning-catalog.yaml#/paths/~1catalog~1lessons~1{learningLessonID}~1exercises'
+  /catalog/lessons/{learningLessonID}/exercises/{exerciseID}:
+    $ref: './learning-catalog.yaml#/paths/~1catalog~1lessons~1{learningLessonID}~1exercises~1{exerciseID}'
+  /catalog/lessons/{learningLessonID}/answer-keys:
+    $ref: './learning-catalog.yaml#/paths/~1catalog~1lessons~1{learningLessonID}~1answer-keys'
+  /catalog/lessons/{learningLessonID}/exercises/{exerciseID}/attempts:
+    $ref: './learning-catalog.yaml#/paths/~1catalog~1lessons~1{learningLessonID}~1exercises~1{exerciseID}~1attempts'
+  /catalog/lessons/{learningLessonID}/attempts:
+    $ref: './learning-catalog.yaml#/paths/~1catalog~1lessons~1{learningLessonID}~1attempts'
+  /catalog/lessons/{learningLessonID}/attempts/{attemptID}/review:
+    $ref: './learning-catalog.yaml#/paths/~1catalog~1lessons~1{learningLessonID}~1attempts~1{attemptID}~1review'
   /auth/register:
     post:
       security: []
-      summary: Register a tutor or student and set a session cookie.
+      summary: Register a tutor or student and set a session cookie. Production requires email confirmation before workspace access.
       requestBody:
         $ref: '#/components/requestBodies/Register'
       responses:
@@ -30,6 +181,37 @@ paths:
       responses:
         '200': { description: Session revoked and cookie cleared }
         '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/verification-email:
+    post:
+      summary: Send a one-hour verification link to the authenticated user's stored email. One request per minute.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false}
+      responses:
+        '200': {description: SMTP accepted the message, or email is already verified}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '500': {description: Mail delivery failed; never returns a token}
+  /auth/verify-email:
+    post:
+      summary: Confirm a token bound to the authenticated account and its current email. Replays before expiry are idempotent.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [token]
+              properties:
+                token: {type: string, minLength: 32, maxLength: 256}
+      responses:
+        '200': {description: Email confirmed, content: {application/json: {schema: {$ref: '#/components/schemas/UserEnvelope'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
   /auth/forgot-password:
     post:
       security: []
@@ -109,7 +291,7 @@ paths:
   /messages/conversations:
     get:
       responses:
-        '200': { description: Visible conversations, up to 100 }
+        '200': { description: 'Up to100 active participant conversations, each with unread_count excluding own messages; no global admin/guardian bypass' }
   /messages/conversations/{conversationID}:
     parameters:
       - { name: conversationID, in: path, required: true, schema: { type: string, format: uuid } }
@@ -117,7 +299,7 @@ paths:
       parameters:
         - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 100000, default: 0 } }
       responses:
-        '200': { description: Up to 80 messages in chronological order, from the requested newest-first page }
+        '200': { description: 'Up to80 messages ordered by server sequence, from the requested newest-first page; active participant required' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '404': { $ref: '#/components/responses/NotFound' }
     post:
@@ -128,6 +310,25 @@ paths:
       responses:
         '201': { description: Stored message, content: { application/json: { schema: { $ref: '#/components/schemas/Message' } } } }
         '404': { $ref: '#/components/responses/NotFound' }
+        '409': { description: Idempotency-Key reused with different body or attachment IDs }
+  /messages/conversations/{conversationID}/read:
+    parameters:
+      - {name: conversationID, in: path, required: true, schema: {type: string, format: uuid}}
+    post:
+      summary: Advance own monotone read cursor through an existing message of this active conversation; no client time/cursor/user fields
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [through_message_id]
+              properties: {through_message_id: {type: string, format: uuid}}
+      responses:
+        '200': {description: Authoritative unread count, content: {application/json: {schema: {type: object, required: [unread_count], properties: {unread_count: {type: integer, minimum: 0}}}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '404': {$ref: '#/components/responses/NotFound'}
   /assignments:
     get:
       parameters:
@@ -279,9 +480,12 @@ components:
           schema:
             type: object
             additionalProperties: false
-            required: [body]
+            description: At most one attachment; nonempty trimmed body or one attachment is required
             properties:
-              body: { type: string, minLength: 1, maxLength: 4000 }
+              body: { type: string, maxLength: 4000 }
+              file_id: {type: string, format: uuid}
+              assignment_id: {type: string, format: uuid}
+              lesson_id: {type: string, format: uuid}
     Assignment:
       required: true
       content:
@@ -326,6 +530,7 @@ components:
       required: [user]
       properties:
         user: { $ref: '#/components/schemas/User' }
+        verification_email_sent: {type: boolean, description: Registration only; false means SMTP delivery did not succeed. Never grants access.}
     User:
       type: object
       required: [id, organization_id, email, display_name, role, timezone, locale, created_at]
@@ -337,6 +542,8 @@ components:
         role: { type: string, enum: [tutor, student, admin] }
         timezone: { type: string }
         locale: { type: string }
+        email_verified: {type: boolean, readOnly: true}
+        email_verification_required: {type: boolean, readOnly: true}
         created_at: { type: string, format: date-time }
     Relation:
       type: object
@@ -362,17 +569,21 @@ components:
         created_at: { type: string, format: date-time }
     Message:
       type: object
-      required: [id, conversation_id, author_id, body, created_at]
+      required: [id, conversation_id, author_id, body, created_at, sequence]
       properties:
         id: { type: string, format: uuid }
         conversation_id: { type: string, format: uuid }
+        sequence: {type: integer, minimum: 1, description: Database-assigned per-conversation order; replay preserves the original value}
+        attachment: {$ref: './chat-attachments.yaml#/components/schemas/Attachment'}
         author_id: { type: string, format: uuid }
         body: { type: string }
         created_at: { type: string, format: date-time }
     Assignment:
       type: object
-      required: [id, tutor_id, student_id, student_name, title, subject, topic, body, status, due_at, max_score, feedback, answer, created_at]
+      required: [id, tutor_id, student_id, student_name, title, subject, topic, body, status, due_at, max_score, feedback, answer, created_at, kind]
       properties:
+        kind: { type: string, enum: [text, material] }
+        material: { $ref: './material-assignments.yaml#/components/schemas/Material' }
         id: { type: string, format: uuid }
         tutor_id: { type: string, format: uuid }
         student_id: { type: string, format: uuid }

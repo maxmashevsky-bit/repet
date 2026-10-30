@@ -1,0 +1,4 @@
+import Link from "next/link";
+import { ApiError } from "../../shared/api/client";
+export function FamilyError({error,retry}:{error:unknown;retry?:()=>void}){const status=error instanceof ApiError?error.status:0,message=status===404?"Нет разрешённого доступа к ребёнку.":status===422?"Приглашение больше не действует.":status===409?"Такое приглашение или изменённый запрос уже существует.":error instanceof Error?error.message:"Не удалось загрузить семейный кабинет.";return <div className="material-error" role="alert"><p>{message}</p>{status===401?<Link href="/login" className="button secondary">Войти</Link>:retry?<button type="button" className="secondary" onClick={retry}>Повторить</button>:null}</div>;}
+export const familyDate=(v:string)=>new Date(v).toLocaleString("ru-RU",{dateStyle:"medium",timeStyle:"short"});

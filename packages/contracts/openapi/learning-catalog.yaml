@@ -1,0 +1,506 @@
+openapi: 3.1.0
+info:
+  title: Repet Learning Catalog API
+  version: 1.0.0
+servers:
+  - url: /api/v1
+security:
+  - session: []
+paths:
+  /catalog/courses:
+    get:
+      summary: Search visible courses; authors also see their own drafts and archives.
+      parameters:
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Offset' }
+        - { $ref: '#/components/parameters/Query' }
+        - { $ref: '#/components/parameters/Track' }
+        - { $ref: '#/components/parameters/Grade' }
+        - { $ref: '#/components/parameters/Difficulty' }
+        - { $ref: '#/components/parameters/AuthorID' }
+        - { $ref: '#/components/parameters/Status' }
+      responses:
+        '200': { description: Page, content: { application/json: { schema: { $ref: '#/components/schemas/CoursePage' } } } }
+        default: { $ref: '#/components/responses/Error' }
+    post:
+      summary: Tutor creates a draft; organization and author come from the session.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CourseInput' } } }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Course' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/courses/{courseID}:
+    parameters: [{ $ref: '#/components/parameters/CourseID' }]
+    get:
+      responses:
+        '200': { description: Visible course, content: { application/json: { schema: { $ref: '#/components/schemas/Course' } } } }
+        default: { $ref: '#/components/responses/Error' }
+    put:
+      summary: Author replaces course fields; does not change status or published lesson snapshots.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CourseInput' } } }
+      responses:
+        '200': { description: Updated, content: { application/json: { schema: { $ref: '#/components/schemas/Course' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/courses/{courseID}/publish:
+    parameters: [{ $ref: '#/components/parameters/CourseID' }]
+    post:
+      requestBody: { $ref: '#/components/requestBodies/EmptyAction' }
+      responses:
+        '200': { description: Published, content: { application/json: { schema: { $ref: '#/components/schemas/Course' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/courses/{courseID}/archive:
+    parameters: [{ $ref: '#/components/parameters/CourseID' }]
+    post:
+      requestBody: { $ref: '#/components/requestBodies/EmptyAction' }
+      responses:
+        '200': { description: Archived and hidden from non-authors, content: { application/json: { schema: { $ref: '#/components/schemas/Course' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/courses/{courseID}/topics:
+    parameters: [{ $ref: '#/components/parameters/CourseID' }]
+    get:
+      parameters:
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Offset' }
+        - { $ref: '#/components/parameters/Query' }
+        - { $ref: '#/components/parameters/Status' }
+      responses:
+        '200': { description: Visible topics in position/id order, content: { application/json: { schema: { $ref: '#/components/schemas/TopicPage' } } } }
+        default: { $ref: '#/components/responses/Error' }
+    post:
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/TopicInput' } } }
+      responses:
+        '201': { description: Draft topic, content: { application/json: { schema: { $ref: '#/components/schemas/Topic' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/topics/{topicID}:
+    parameters: [{ $ref: '#/components/parameters/TopicID' }]
+    get:
+      responses:
+        '200': { description: Visible topic, content: { application/json: { schema: { $ref: '#/components/schemas/Topic' } } } }
+        default: { $ref: '#/components/responses/Error' }
+    put:
+      summary: Author replaces topic fields; parent must be in the same course, without cycles.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/TopicInput' } } }
+      responses:
+        '200': { description: Updated, content: { application/json: { schema: { $ref: '#/components/schemas/Topic' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/topics/{topicID}/publish:
+    parameters: [{ $ref: '#/components/parameters/TopicID' }]
+    post:
+      summary: Requires published course and all parent topics.
+      requestBody: { $ref: '#/components/requestBodies/EmptyAction' }
+      responses:
+        '200': { description: Published, content: { application/json: { schema: { $ref: '#/components/schemas/Topic' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/topics/{topicID}/archive:
+    parameters: [{ $ref: '#/components/parameters/TopicID' }]
+    post:
+      requestBody: { $ref: '#/components/requestBodies/EmptyAction' }
+      responses:
+        '200': { description: Archived branch, content: { application/json: { schema: { $ref: '#/components/schemas/Topic' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/courses/{courseID}/lessons:
+    parameters: [{ $ref: '#/components/parameters/CourseID' }]
+    post:
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/LessonInput' } } }
+      responses:
+        '201': { description: Draft learning lesson, content: { application/json: { schema: { $ref: '#/components/schemas/Lesson' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/lessons:
+    get:
+      summary: Search visible lesson content; topic filter includes descendants, no private answer keys.
+      parameters:
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Offset' }
+        - { $ref: '#/components/parameters/Query' }
+        - { $ref: '#/components/parameters/Track' }
+        - { $ref: '#/components/parameters/Grade' }
+        - { $ref: '#/components/parameters/Difficulty' }
+        - { $ref: '#/components/parameters/AuthorID' }
+        - { $ref: '#/components/parameters/Status' }
+        - { name: course_id, in: query, schema: { type: string, format: uuid } }
+        - { name: topic_id, in: query, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Page, content: { application/json: { schema: { $ref: '#/components/schemas/LessonPage' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/lessons/{learningLessonID}:
+    parameters: [{ $ref: '#/components/parameters/LessonID' }]
+    get:
+      summary: Author sees working draft number 0; other authorized readers see current published snapshot.
+      responses:
+        '200': { description: Lesson without answer keys, content: { application/json: { schema: { $ref: '#/components/schemas/Lesson' } } } }
+        default: { $ref: '#/components/responses/Error' }
+    put:
+      summary: Edit draft only; public snapshot remains unchanged until explicit publication.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/LessonInput' } } }
+      responses:
+        '200': { description: Updated draft, content: { application/json: { schema: { $ref: '#/components/schemas/Lesson' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/lessons/{learningLessonID}/publish:
+    parameters: [{ $ref: '#/components/parameters/LessonID' }]
+    post:
+      summary: Atomically snapshot draft and exercises/keys, seal them and switch publication pointer.
+      description: Requires published ancestors and content or exercises. Repeating unchanged publication returns 422.
+      requestBody: { $ref: '#/components/requestBodies/EmptyAction' }
+      responses:
+        '200': { description: New immutable published snapshot without keys, content: { application/json: { schema: { $ref: '#/components/schemas/Lesson' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/lessons/{learningLessonID}/archive:
+    parameters: [{ $ref: '#/components/parameters/LessonID' }]
+    post:
+      requestBody: { $ref: '#/components/requestBodies/EmptyAction' }
+      responses:
+        '200': { description: Archived; author retains access, content: { application/json: { schema: { $ref: '#/components/schemas/Lesson' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/lessons/{learningLessonID}/versions:
+    parameters: [{ $ref: '#/components/parameters/LessonID' }]
+    get:
+      summary: Author sees all published snapshots; other readers see current snapshot only.
+      parameters: [{ $ref: '#/components/parameters/Limit' }, { $ref: '#/components/parameters/Offset' }]
+      responses:
+        '200': { description: Version page, content: { application/json: { schema: { $ref: '#/components/schemas/VersionPage' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/lessons/{learningLessonID}/versions/{number}:
+    parameters:
+      - { $ref: '#/components/parameters/LessonID' }
+      - { name: number, in: path, required: true, schema: { type: integer, minimum: 0, maximum: 2147483647 } }
+    get:
+      summary: Historical versions and draft 0 are author-only; others can read current publication only.
+      responses:
+        '200': { description: Lesson at version without keys, content: { application/json: { schema: { $ref: '#/components/schemas/Lesson' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/lessons/{learningLessonID}/exercises:
+    parameters: [{ $ref: '#/components/parameters/LessonID' }]
+    get:
+      parameters:
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Offset' }
+        - { $ref: '#/components/parameters/Query' }
+        - { $ref: '#/components/parameters/Difficulty' }
+      responses:
+        '200': { description: Public exercise fields at visible version, content: { application/json: { schema: { $ref: '#/components/schemas/ExercisePage' } } } }
+        default: { $ref: '#/components/responses/Error' }
+    post:
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ExerciseInput' } } }
+      responses:
+        '201': { description: Draft exercise without echoed key, content: { application/json: { schema: { $ref: '#/components/schemas/Exercise' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/lessons/{learningLessonID}/exercises/{exerciseID}:
+    parameters:
+      - { $ref: '#/components/parameters/LessonID' }
+      - { name: exerciseID, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      responses:
+        '200': { description: Exercise without key, content: { application/json: { schema: { $ref: '#/components/schemas/Exercise' } } } }
+        default: { $ref: '#/components/responses/Error' }
+    put:
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ExerciseInput' } } }
+      responses:
+        '200': { description: Updated draft exercise without key, content: { application/json: { schema: { $ref: '#/components/schemas/Exercise' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/lessons/{learningLessonID}/answer-keys:
+    parameters: [{ $ref: '#/components/parameters/LessonID' }]
+    get:
+      summary: PRIVATE author-only answer keys; never part of lesson/exercise read DTOs.
+      parameters: [{ name: version, in: query, schema: { type: integer, minimum: 0, maximum: 2147483647, default: 0 } }]
+      responses:
+        '200':
+          description: Private keys
+          content: { application/json: { schema: { type: object, required: [items], properties: { items: { type: array, items: { $ref: '#/components/schemas/AnswerKey' } } } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/lessons/{learningLessonID}/exercises/{exerciseID}/attempts:
+    parameters:
+      - { $ref: '#/components/parameters/LessonID' }
+      - { name: exerciseID, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      summary: Student submits against the visible published version; keys stay private. Identical request_id replay returns the same attempt; changed payload or stale version returns 409.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/AttemptInput' } } }
+      responses:
+        '201': { description: Created or replayed attempt, content: { application/json: { schema: { $ref: '#/components/schemas/Attempt' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/lessons/{learningLessonID}/attempts:
+    parameters: [{ $ref: '#/components/parameters/LessonID' }]
+    get:
+      summary: Student sees only own attempts while lesson remains accessible; author sees attempts for their lesson, including previous versions.
+      parameters:
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Offset' }
+      responses:
+        '200': { description: Attempt history without keys, content: { application/json: { schema: { $ref: '#/components/schemas/AttemptPage' } } } }
+        default: { $ref: '#/components/responses/Error' }
+  /catalog/lessons/{learningLessonID}/attempts/{attemptID}/review:
+    parameters:
+      - { $ref: '#/components/parameters/LessonID' }
+      - { name: attemptID, in: path, required: true, schema: { type: string, format: uuid } }
+    put:
+      summary: Author reviews free-practice long_text; an assignment is reviewed only by its assigning tutor with active relationship. Unfinished exams cannot be reviewed. Identical retry is safe; changing a completed review returns 409. Identity and time come from server.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [status]
+              properties:
+                status: { type: string, enum: [correct, incorrect] }
+                feedback: { type: string, maxLength: 10000, default: '' }
+      responses:
+        '200': { description: Reviewed attempt, content: { application/json: { schema: { $ref: '#/components/schemas/Attempt' } } } }
+        default: { $ref: '#/components/responses/Error' }
+components:
+  securitySchemes:
+    session: { type: apiKey, in: cookie, name: repet_session }
+  parameters:
+    CourseID: { name: courseID, in: path, required: true, schema: { type: string, format: uuid } }
+    TopicID: { name: topicID, in: path, required: true, schema: { type: string, format: uuid } }
+    LessonID: { name: learningLessonID, in: path, required: true, schema: { type: string, format: uuid } }
+    Limit: { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+    Offset: { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 100000, default: 0 } }
+    Query: { name: q, in: query, schema: { type: string, maxLength: 200 } }
+    Track: { name: track, in: query, schema: { type: string, enum: [school, olympiad, oge, ege] } }
+    Grade: { name: grade, in: query, schema: { type: integer, minimum: 1, maximum: 11 } }
+    Difficulty: { name: difficulty, in: query, schema: { type: integer, minimum: 1, maximum: 5 } }
+    AuthorID: { name: author_id, in: query, schema: { type: string, format: uuid } }
+    Status: { name: status, in: query, schema: { type: string, enum: [draft, published, archived] } }
+  requestBodies:
+    EmptyAction:
+      required: false
+      content: { application/json: { schema: { type: object, additionalProperties: false } } }
+  responses:
+    Error:
+      description: 400 invalid input, 401 no session, 403 role forbidden, 404 missing/inaccessible, 409 conflict, 422 invalid publication state, or 500 internal error.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error:
+                type: object
+                required: [code, message]
+                properties: { code: { type: string }, message: { type: string } }
+  schemas:
+    CourseFields:
+      type: object
+      required: [title, track, grade_min, grade_max, difficulty]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: string, default: '' }
+        track: { type: string, enum: [school, olympiad, oge, ege] }
+        grade_min: { type: integer, minimum: 1, maximum: 11 }
+        grade_max: { type: integer, minimum: 1, maximum: 11, description: Must be at least grade_min. }
+        difficulty: { type: integer, minimum: 1, maximum: 5 }
+        visibility: { type: string, enum: [linked_students, organization], default: linked_students }
+    CourseInput:
+      allOf: [{ $ref: '#/components/schemas/CourseFields' }]
+      unevaluatedProperties: false
+    Course:
+      allOf:
+        - { $ref: '#/components/schemas/CourseFields' }
+        - type: object
+          required: [id, author_id, author_name, status, created_at, updated_at]
+          properties:
+            id: { type: string, format: uuid }
+            author_id: { type: string, format: uuid }
+            author_name: { type: string }
+            status: { type: string, enum: [draft, published, archived] }
+            created_at: { type: string, format: date-time }
+            updated_at: { type: string, format: date-time }
+    TopicFields:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: string, default: '' }
+        parent_id: { type: [string, 'null'], format: uuid }
+        position: { type: integer, minimum: 0, maximum: 1000000, default: 0 }
+    TopicInput:
+      allOf: [{ $ref: '#/components/schemas/TopicFields' }]
+      unevaluatedProperties: false
+    Topic:
+      allOf:
+        - { $ref: '#/components/schemas/TopicFields' }
+        - type: object
+          required: [id, course_id, status]
+          properties:
+            id: { type: string, format: uuid }
+            course_id: { type: string, format: uuid }
+            status: { type: string, enum: [draft, published, archived] }
+    LessonFields:
+      type: object
+      required: [topic_id, title, track, grade_min, grade_max, difficulty]
+      properties:
+        topic_id: { type: string, format: uuid }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        summary: { type: string, default: '' }
+        content: { type: string, default: '', description: Text/Markdown; not executable HTML. }
+        example:
+          oneOf: [{ $ref: '#/components/schemas/LearningExample' }, { type: 'null' }]
+        track: { type: string, enum: [school, olympiad, oge, ege] }
+        grade_min: { type: integer, minimum: 1, maximum: 11 }
+        grade_max: { type: integer, minimum: 1, maximum: 11 }
+        difficulty: { type: integer, minimum: 1, maximum: 5 }
+    LearningExample:
+      type: object
+      additionalProperties: false
+      required: [title, explanation, min, max, steps]
+      description: Authored number-line example. Server requires min < max, range <= 100, and every step within bounds. Copied into the immutable published version.
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        explanation: { type: string, minLength: 1, maxLength: 10000 }
+        min: { type: integer, minimum: -1000, maximum: 999 }
+        max: { type: integer, minimum: -999, maximum: 1000 }
+        steps:
+          type: array
+          minItems: 2
+          maxItems: 12
+          items:
+            type: object
+            additionalProperties: false
+            required: [text, value]
+            properties:
+              text: { type: string, minLength: 1, maxLength: 2000 }
+              value: { type: integer, minimum: -1000, maximum: 1000 }
+    LessonInput:
+      allOf: [{ $ref: '#/components/schemas/LessonFields' }]
+      unevaluatedProperties: false
+    ExerciseFields:
+      type: object
+      required: [kind, prompt, difficulty]
+      properties:
+        kind: { type: string, enum: [text, numeric, single_choice, multiple_choice, long_text, number_line, grid_select, matching, ordering, geometry] }
+        prompt: { type: string, minLength: 1 }
+        options: { type: array, items: { type: string }, default: [], description: Choice types have 2–12 unique nonblank options; all others have none. }
+        difficulty: { type: integer, minimum: 1, maximum: 5 }
+        position: { type: integer, minimum: 0, maximum: 1000000, default: 0 }
+        config: { type: object, description: Public objects only; strict per-kind schema and cross-field constraints are enforced by the exercise engine. }
+        media: { $ref: '../../../apps/web/features/exercise-engine/exercise.schema.json#/properties/media' }
+    ExerciseInput:
+      allOf:
+        - { $ref: '#/components/schemas/ExerciseFields' }
+        - { $ref: '../../../apps/web/features/exercise-engine/exercise.schema.json#/definitions/variants' }
+        - type: object
+          properties:
+            answer_key:
+              type: object
+              additionalProperties: false
+              properties:
+                answer: { type: string, maxLength: 4096, description: 'PRIVATE. single_choice: one option; multiple_choice: JSON array of option strings; numeric: exact decimal or integer fraction; text: normalized text; long_text: ignored, manual marker generated by server. number_line: integer coordinate; other visual kinds: JSON string array of cell IDs, matching pairs, ordered item IDs, geometry coordinates, canonical edges or object IDs. See exercise-engine README for formats.' }
+                explanation: { type: string, default: '' }
+                hints: { type: array, maxItems: 5, items: { type: string, minLength: 1, maxLength: 4000 }, description: Private hint texts; students receive only a count until a recorded reveal. }
+        - if: { properties: { kind: { const: long_text } } }
+          then: {}
+          else:
+            required: [answer_key]
+            properties: { answer_key: { required: [answer], properties: { answer: { minLength: 1 } } } }
+      unevaluatedProperties: false
+    Exercise:
+      $ref: '../../../apps/web/features/exercise-engine/exercise.schema.json'
+    AnswerKey:
+      type: object
+      required: [exercise_id, answer, explanation]
+      properties:
+        exercise_id: { type: string, format: uuid }
+        answer: { type: string }
+        explanation: { type: string }
+        hints: { type: array, items: { type: string } }
+    Version:
+      allOf:
+        - { $ref: '#/components/schemas/LessonFields' }
+        - type: object
+          required: [id, number, exercises, created_at, published_at]
+          properties:
+            id: { type: string, format: uuid }
+            number: { type: integer, minimum: 0 }
+            exercises: { type: array, items: { $ref: '#/components/schemas/Exercise' } }
+            created_at: { type: string, format: date-time }
+            published_at: { type: [string, 'null'], format: date-time }
+    Lesson:
+      type: object
+      required: [id, course_id, author_id, author_name, status, has_unpublished_changes, version]
+      properties:
+        id: { type: string, format: uuid }
+        course_id: { type: string, format: uuid }
+        author_id: { type: string, format: uuid }
+        author_name: { type: string }
+        status: { type: string, enum: [draft, published, archived] }
+        has_unpublished_changes: { type: boolean }
+        version: { $ref: '#/components/schemas/Version' }
+      additionalProperties: false
+    Page:
+      type: object
+      required: [items, total, limit, offset]
+      properties:
+        total: { type: integer, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0, maximum: 100000 }
+    CoursePage:
+      allOf: [{ $ref: '#/components/schemas/Page' }, { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Course' } } } }]
+    TopicPage:
+      allOf: [{ $ref: '#/components/schemas/Page' }, { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Topic' } } } }]
+    LessonPage:
+      allOf: [{ $ref: '#/components/schemas/Page' }, { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Lesson' } } } }]
+    ExerciseAnswer:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [value]
+          properties: { value: { type: string, minLength: 1, maxLength: 20000 } }
+        - type: object
+          additionalProperties: false
+          required: [selected]
+          properties: { selected: { type: array, minItems: 1, maxItems: 66, uniqueItems: true, items: { type: string, minLength: 1, maxLength: 1000 } } }
+    AttemptInput:
+      type: object
+      additionalProperties: false
+      required: [version_id, request_id, answer]
+      properties:
+        version_id: { type: string, format: uuid }
+        request_id: { type: string, format: uuid, description: Client nonce scoped to this student; same payload required for retries. }
+        learning_attempt_id: { type: string, format: uuid, description: Own unfinished run; its pinned version is accepted even after a new publication. Omit only for legacy version-current submissions. }
+        answer: { $ref: '#/components/schemas/ExerciseAnswer' }
+    Attempt:
+      type: object
+      additionalProperties: false
+      required: [id, exercise_id, version_id, version, student_id, student_name, kind, prompt, answer, status, feedback, created_at, reviewed_at, learning_attempt_id, attempt_number, hints_used, elapsed_seconds]
+      properties:
+        id: { type: string, format: uuid }
+        exercise_id: { type: string, format: uuid }
+        version_id: { type: string, format: uuid }
+        version: { type: integer, minimum: 1 }
+        student_id: { type: string, format: uuid }
+        student_name: { type: string }
+        kind: { type: string, enum: [text, numeric, single_choice, multiple_choice, long_text, number_line, grid_select, matching, ordering, geometry] }
+        prompt: { type: string }
+        answer: { $ref: '#/components/schemas/ExerciseAnswer' }
+        status: { type: string, enum: [correct, incorrect, needs_review, submitted], description: Unfinished exams expose only submitted with empty feedback and null reviewed_at; one new submission per exercise with nonce-safe replay. }
+        feedback: { type: string }
+        created_at: { type: string, format: date-time }
+        reviewed_at: { type: [string, 'null'], format: date-time }
+        learning_attempt_id: { type: [string, 'null'], format: uuid }
+        attempt_number: { type: integer, minimum: 1, description: Server sequence per student and physical versioned exercise across runs. }
+        hints_used: { type: integer, minimum: 0, maximum: 5 }
+        elapsed_seconds: { type: integer, minimum: 0, description: Server wall time since previous answer for this exercise in this run, or run start. Legacy unlinked attempts use zero. }
+    AttemptPage:
+      allOf: [{ $ref: '#/components/schemas/Page' }, { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Attempt' } } } }]
+    ExercisePage:
+      allOf: [{ $ref: '#/components/schemas/Page' }, { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Exercise' } } } }]
+    VersionPage:
+      allOf: [{ $ref: '#/components/schemas/Page' }, { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Version' } } } }]

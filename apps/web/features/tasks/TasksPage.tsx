@@ -1,6 +1,9 @@
 "use client";
+import { Select } from "../ui/Select";
+
 
 import { FormEvent, useMemo, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { productApi } from "../../shared/api/client";
 import type { Assignment } from "../../shared/api/types";
@@ -8,10 +11,17 @@ import { formatDateTime } from "../../shared/lib/date";
 import { useWorkspace } from "../app-shell/AppShell";
 import { BrandMark } from "../ui/Brand";
 import { Icon } from "../ui/Icon";
+import { TaskSectionNav } from "./TaskSectionNav";
+import { MaterialAssignmentComposer } from "./MaterialAssignmentComposer";
+import {AssignmentPage} from "../html-lessons/HTMLAssignmentPage";
+
+const assignmentLabels: Record<Assignment["status"],string> = {draft:"Черновик",assigned:"Назначено",submitted:"На проверке",revision:"На доработке",done:"Проверено",overdue:"Просрочено",archived:"В архиве"};
 
 export function TasksPage() {
   const { dashboard } = useWorkspace();
-  return dashboard.user.role === "tutor" ? <TeacherTasks /> : <StudentTasks />;
+  const search=useSearchParams(),task=search.get("task");
+  if(task)return <AssignmentPage assignmentID={task}/>;
+  return <><TaskSectionNav />{dashboard.user.role === "tutor" ? <TeacherTasks /> : <StudentTasks />}</>;
 }
 
 function StudentTasks() {
@@ -49,7 +59,7 @@ function StudentTasks() {
           <p className="eyebrow">Продолжить задание</p>
           <h2>{selected?.title ?? "Заданий пока нет"}</h2>
           <p className="hero-meta">{selected ? <><Icon name="user" size={18} />{selected.topic}<span>·</span><Icon name="calendar" size={18} />Сдать до {formatDateTime(selected.due_at, dashboard.user.timezone)}</> : "Когда преподаватель назначит работу, она появится здесь."}</p>
-          {selected ? <div className="actions hero-actions"><a className="button hero-primary" href="#task-work">Открыть задание <Icon name="arrow" size={18} /></a></div> : null}
+          {selected ? <div className="actions hero-actions"><Link className="button hero-primary" href={selected.kind==="material"||selected.html?`/tasks/${selected.id}`:"#task-work"}>Открыть задание <Icon name="arrow" size={18} /></Link></div> : null}
         </div>
       </article>
       <section className="panel">
@@ -57,16 +67,17 @@ function StudentTasks() {
         {visible.length === 0 ? <p className="empty">Заданий нет.</p> : visible.map((item) => (
           <button key={item.id} type="button" className={selected?.id === item.id ? "task-row active" : "task-row"} onClick={() => { setSelectedID(item.id); setAnswer(item.answer); }}>
             <span className={item.status === "assigned" && new Date(item.due_at) < new Date() ? "soft-icon terracotta-soft" : "soft-icon"}><Icon name="task" size={19} /></span>
-            <span className="task-copy"><strong>{item.title}</strong><small>{item.status} · до {formatDateTime(item.due_at, dashboard.user.timezone)}</small></span>
+            <span className="task-copy"><strong>{item.title}</strong><small>{assignmentLabels[item.status]} · до {formatDateTime(item.due_at, dashboard.user.timezone)}</small></span>
             <Icon name="chevron" size={18} />
           </button>
         ))}
       </section>
       <section className="panel" id="task-work">
         <h2>Работа</h2>
-        {selected ? (
+        {selected?.kind==="material"?<><p>{selected.body}</p><p className="muted">{selected.material?.exercise_ids.length} упражнений · {selected.material?.mode==="exam"?"Контрольная":"Тренировка"}</p><Link className="button" href={`/tasks/${selected.id}`}>{selected.status==="done"||selected.status==="submitted"?"Посмотреть результат":"Решать задание"}<Icon name="arrow" size={17}/></Link></>:selected ? (
           <>
             <p>{selected.body}</p>
+            {selected.html?<Link className="button secondary" href={`/tasks/${selected.id}`}>Открыть HTML-урок<Icon name="arrow" size={17}/></Link>:null}
             <label>Ответ<textarea value={answer} onChange={(event) => setAnswer(event.target.value)} rows={7} /></label>
             {selected.feedback ? <p className="notice">Комментарий преподавателя: {selected.feedback}</p> : null}
             {error ? <p className="field-error">{error}</p> : null}
@@ -93,7 +104,7 @@ function TeacherTasks() {
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [filter, setFilter] = useState("Все");
-  const review = useMemo(() => dashboard.assignments.filter((item) => item.status === "submitted"), [dashboard.assignments]);
+  const review = useMemo(() => dashboard.assignments.filter((item) => item.status === "submitted"&&item.kind!=="material"), [dashboard.assignments]);
 
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -137,10 +148,11 @@ function TeacherTasks() {
         <div className="metric"><span className="soft-icon danger-soft"><Icon name="clock" /></span><span>Просрочено<strong>{dashboard.assignments.filter((item) => item.status === "assigned" && new Date(item.due_at) < new Date()).length}</strong></span></div>
         <div className="metric"><span className="soft-icon"><Icon name="chart" /></span><span>Проверено<strong>{dashboard.assignments.filter((item) => item.status === "done").length}</strong></span></div>
       </div>
+      <MaterialAssignmentComposer/>
       <section className="panel" id="create-assignment">
-        <h2>Создать задание</h2>
+        <h2>Текстовое задание</h2>
         <form className="form-stack" onSubmit={create}>
-          <label>Ученик<select value={studentID} onChange={(event) => setStudentID(event.target.value)} required>{dashboard.relations.map((relation) => <option key={relation.id} value={relation.student_id}>{dashboard.conversations.find((item) => item.student_id === relation.student_id)?.student_name ?? relation.student_id}</option>)}</select></label>
+          <label>Ученик<Select value={studentID} onChange={(event) => setStudentID(event.target.value)} required>{dashboard.relations.map((relation) => <option key={relation.id} value={relation.student_id}>{dashboard.conversations.find((item) => item.student_id === relation.student_id)?.student_name ?? relation.student_id}</option>)}</Select></label>
           <label>Название<input value={title} onChange={(event) => setTitle(event.target.value)} required /></label>
           <label>Предмет<input value={subject} onChange={(event) => setSubject(event.target.value)} /></label>
           <label>Тема<input value={topic} onChange={(event) => setTopic(event.target.value)} /></label>
@@ -165,7 +177,7 @@ function TeacherTasks() {
       <section className="panel full">
         <h2>Все задания</h2>
         <div className="tabs">{["Все", "Назначенные", "На проверку", "Проверено"].map((item) => <button key={item} type="button" className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{item}</button>)}</div>
-        {dashboard.assignments.filter((item) => filter === "Все" || filter === "Назначенные" && item.status === "assigned" || filter === "На проверку" && item.status === "submitted" || filter === "Проверено" && item.status === "done").map((item) => <p className="task-row static" key={item.id}><strong>{item.title}</strong><span>{item.student_name} · {item.status} · {formatDateTime(item.due_at, dashboard.user.timezone)}</span></p>)}
+        {dashboard.assignments.filter((item) => filter === "Все" || filter === "Назначенные" && item.status === "assigned" || filter === "На проверку" && item.status === "submitted" || filter === "Проверено" && item.status === "done").map((item) => <div className="task-row static" key={item.id}><strong>{item.title}</strong><span>{item.student_name} · {assignmentLabels[item.status]} · {formatDateTime(item.due_at, dashboard.user.timezone)}</span>{item.kind==="material"?<Link className="inline-link" href={`/tasks/${item.id}`}>Результаты<Icon name="arrow" size={16}/></Link>:null}</div>)}
       </section>
     </section>
   );

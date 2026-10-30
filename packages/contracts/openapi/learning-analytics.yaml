@@ -1,0 +1,83 @@
+openapi: 3.1.0
+info: {title: Repet learning analytics, version: 1.0.0}
+servers: [{url: /api/v1}]
+security: [{session: []}]
+paths:
+  /learning-analytics/students:
+    get:
+      summary: Tutor active student roster; does not expose another tutor's children
+      parameters: [{$ref: './exercise-bank.yaml#/components/parameters/Limit'}, {$ref: './exercise-bank.yaml#/components/parameters/Offset'}]
+      responses:
+        '200': {description: 'items with id/display_name, total, limit, offset'}
+        '403': {description: Tutor required}
+  /learning-analytics/{studentID}:
+    parameters: [{$ref: '#/components/parameters/StudentID'}]
+    get:
+      summary: Own student report or tutor-scoped teaching context; overdue exams finalized before snapshot
+      parameters:
+        - {name: from, in: query, schema: {type: string, format: date}, description: Inclusive UTC day; default 29 days before today}
+        - {name: to, in: query, schema: {type: string, format: date}, description: Inclusive UTC day; at most 366 days overall}
+        - {name: topic_offset, in: query, schema: {type: integer, minimum: 0, maximum: 100000, default: 0}}
+        - {name: exam_offset, in: query, schema: {type: integer, minimum: 0, maximum: 100000, default: 0}}
+      responses:
+        '200': {description: 'student, from/to/generated_at, summary, homework, topics page20, timeline, exams page20 and up to5 recommendations; no private keys', content: {application/json: {schema: {$ref: '#/components/schemas/Report'}}}}
+        '400': {description: Invalid range, offsets, unknown or repeated query parameters}
+        '404': {description: Foreign student or inactive relationship}
+  /learning-analytics/{studentID}/repeat:
+    parameters: [{$ref: '#/components/parameters/StudentID'}]
+    post:
+      summary: Tutor assigns pinned latest incorrect exercises of one topic and one permitted run
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [request_id, run_id, topic_key, due_at]
+              properties:
+                request_id: {type: string, format: uuid}
+                run_id: {type: string, format: uuid}
+                topic_key: {type: string, pattern: '^[a-f0-9]{32}$'}
+                due_at: {type: string, format: date-time, description: Future assignment deadline, not an attempt timestamp}
+      responses:
+        '201': {description: Existing material Assignment or identical replay}
+        '403': {description: Tutor required}
+        '404': {description: Unavailable run, topic, child or no remaining incorrect answers}
+        '409': {description: Request ID reused with different payload}
+components:
+  securitySchemes:
+    session: {type: apiKey, in: cookie, name: repet_session}
+  parameters:
+    StudentID: {name: studentID, in: path, required: true, schema: {type: string, format: uuid}}
+  schemas:
+    Metric:
+      type: object
+      additionalProperties: false
+      required: [attempts, graded, correct, incorrect, pending, mistakes, hints, hinted, accuracy, hint_rate]
+      properties:
+        attempts: {type: integer, minimum: 0, description: All real submissions in period}
+        graded: {type: integer, minimum: 0, description: Latest graded answers per run and exercise}
+        correct: {type: integer, minimum: 0}
+        incorrect: {type: integer, minimum: 0}
+        pending: {type: integer, minimum: 0, description: Excluded from accuracy denominator}
+        mistakes: {type: integer, minimum: 0, description: All incorrect submissions, including later corrected}
+        hints: {type: integer, minimum: 0}
+        hinted: {type: integer, minimum: 0}
+        accuracy: {type: [number, 'null'], minimum: 0, maximum: 100}
+        hint_rate: {type: [number, 'null'], minimum: 0, maximum: 100}
+    Report:
+      type: object
+      additionalProperties: false
+      required: [student, from, to, generated_at, summary, homework, topics, timeline, exams, recommendations]
+      properties:
+        student: {type: object, required: [id, display_name], properties: {id: {type: string, format: uuid}, display_name: {type: string}}}
+        from: {type: string, format: date}
+        to: {type: string, format: date}
+        generated_at: {type: string, format: date-time}
+        summary: {$ref: '#/components/schemas/Metric'}
+        homework: {type: object, description: 'Current counts of total/done/submitted/overdue assignments created within period'}
+        topics: {type: object, description: 'page20; metric + key/topic/subtopic/level, previous_graded/recent_graded/change; sample below5 means insufficient'}
+        timeline: {type: array, maxItems: 366, items: {type: object, description: 'UTC day, attempts, graded, correct, accuracy based on all daily submissions'}}
+        exams: {type: object, description: 'page20; own/scoped exams started within period. Active points=null, pending=0; completed raw points/max_points and pending separate'}
+        recommendations: {type: array, maxItems: 5, items: {type: object, description: 'topic_key/topic/subtopic, run_id/lesson_id/href, sample/errors/reason, up to20 exercises with prompt, exercise_id, attempts/mistakes; no answers or keys'}}

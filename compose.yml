@@ -28,17 +28,28 @@ services:
     environment:
       APP_ENV: development
       HTTP_ADDR: :8080
+      HTML_PREVIEW_ADDR: :8081
+      HTML_PREVIEW_PUBLIC_URL: http://html.localhost:${HTML_PREVIEW_PORT:-8081}
       DATABASE_URL: postgres://tutor:tutor@postgres:5432/tutor_platform?sslmode=disable
-      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      CORS_ALLOWED_ORIGINS: http://localhost:${WEB_PORT:-3000},http://127.0.0.1:${WEB_PORT:-3000}
       DEV_AUTH_ENABLED: "false"
       COOKIE_SECURE: "false"
       SMTP_ADDR: mailpit:1025
       SMTP_FROM: no-reply@repet.local
+      APP_PUBLIC_URL: http://localhost:${WEB_PORT:-3000}
+      REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-false}
+      PDF_EXTRACTOR_URL: http://pdf-extractor:8092
+      OBJECT_STORAGE_PATH: /private/objects
+    volumes:
+      - learning-objects:/private
+    networks: [default, pdf-private]
     depends_on:
       postgres:
         condition: service_healthy
       mailpit:
         condition: service_started
+      pdf-extractor:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/readyz"]
       interval: 5s
@@ -46,11 +57,35 @@ services:
       retries: 20
     ports:
       - "127.0.0.1:${API_PORT:-8080}:8080"
+      - "127.0.0.1:${HTML_PREVIEW_PORT:-8081}:8081"
+
+  pdf-extractor:
+    build:
+      context: ./services/core
+      dockerfile: PDF.Dockerfile
+    networks: [pdf-private]
+    read_only: true
+    user: "10001:10001"
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=128m,mode=1777"]
+    mem_limit: 512m
+    cpus: 1
+    pids_limit: 64
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8092/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
   web:
-    build: ./apps/web
+    build:
+      context: ./apps/web
+      args:
+        HTML_PREVIEW_PUBLIC_URL: http://html.localhost:${HTML_PREVIEW_PORT:-8081}
     environment:
       API_INTERNAL_URL: http://api:8080
+      HTML_PREVIEW_PUBLIC_URL: http://html.localhost:${HTML_PREVIEW_PORT:-8081}
     depends_on:
       api:
         condition: service_healthy
@@ -64,3 +99,8 @@ services:
 
 volumes:
   postgres-data:
+  learning-objects:
+
+networks:
+  pdf-private:
+    internal: true

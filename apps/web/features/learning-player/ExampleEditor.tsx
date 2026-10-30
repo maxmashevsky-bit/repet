@@ -1,0 +1,11 @@
+"use client";
+import type { LearningExample } from "../../shared/api/catalog";
+import { Icon } from "../ui/Icon";
+export function ExampleEditor({value,change}:{value?:LearningExample|null;change:(value:LearningExample|undefined)=>void}){
+ return <section className="material-editor-section"><label className="check-row"><input type="checkbox" checked={!!value} onChange={e=>change(e.target.checked?{title:"",explanation:"",min:0,max:10,steps:[{text:"",value:0},{text:"",value:1}]}:undefined)}/>Анимированный пример</label>{value?<>
+  <label>Название примера<input value={value.title} onChange={e=>change({...value,title:e.target.value})} maxLength={200} required/></label><label>Объяснение примера<textarea value={value.explanation} onChange={e=>change({...value,explanation:e.target.value})} maxLength={10000} rows={3} required/></label>
+  <div className="material-two-fields"><label>Начало прямой<input type="number" min={-1000} max={999} step={1} value={value.min} onChange={e=>change({...value,min:Number(e.target.value)})} required/></label><label>Конец прямой<input type="number" min={-999} max={1000} step={1} value={value.max} onChange={e=>change({...value,max:Number(e.target.value)})} required/></label></div>
+  {value.steps.map((step,index)=><div className="player-example-editor-step" key={index}><h3>Шаг примера {index+1}</h3><label>Пояснение шага<textarea aria-label="Пояснение шага" rows={2} value={step.text} onChange={e=>change({...value,steps:value.steps.map((s,i)=>i===index?{...s,text:e.target.value}:s)})} maxLength={2000} required/></label><label>Координата шага<input aria-label="Координата шага" type="number" value={step.value} min={value.min} max={value.max} step={1} onChange={e=>change({...value,steps:value.steps.map((s,i)=>i===index?{...s,value:Number(e.target.value)}:s)})} required/></label><button type="button" className="icon-button" title="Удалить шаг" aria-label={`Удалить шаг примера ${index+1}`} disabled={value.steps.length<=2} onClick={()=>change({...value,steps:value.steps.filter((_,i)=>i!==index)})}><Icon name="close" size={18}/></button></div>)}
+  <button type="button" className="secondary" disabled={value.steps.length>=12} onClick={()=>change({...value,steps:[...value.steps,{text:"",value:value.min}]})}><Icon name="plus" size={17}/>Добавить шаг примера</button>
+ </>:null}</section>;
+}

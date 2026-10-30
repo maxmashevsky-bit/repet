@@ -1,0 +1,132 @@
+openapi: 3.1.0
+info: { title: Repet Material Assignments API, version: 1.0.0 }
+servers: [{ url: /api/v1 }]
+security: [{ session: [] }]
+paths:
+  /assignments/material:
+    post:
+      summary: Tutor assigns a sealed lesson or saved selection to an actively linked student. Exactly one of lesson_id/set_id; omitted exercise_ids selects all. Same nonce replays, changed payload returns 409.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/Input' } } } }
+      responses: { '201': { $ref: '#/components/responses/Assignment' }, default: { $ref: './learning-catalog.yaml#/components/responses/Error' } }
+  /assignments/{assignmentID}:
+    parameters: [{ $ref: '#/components/parameters/ID' }]
+    get:
+      summary: Own assignment; material grants additionally require an active tutor/student relationship.
+      responses: { '200': { $ref: '#/components/responses/Assignment' }, default: { $ref: './learning-catalog.yaml#/components/responses/Error' } }
+  /assignments/{assignmentID}/repeat:
+    parameters: [{ $ref: '#/components/parameters/ID' }]
+    post:
+      summary: Assignment tutor creates a separate repetition preserving snapshot, selection and mode; old results remain unchanged. Nonce-safe.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/Repeat' } } } }
+      responses: { '201': { $ref: '#/components/responses/Assignment' }, default: { $ref: './learning-catalog.yaml#/components/responses/Error' } }
+  /assignments/{assignmentID}/learning-attempt:
+    parameters: [{ $ref: '#/components/parameters/ID' }]
+    post:
+      summary: Assigned student starts/resumes one dedicated run, independent of free practice. Teacher fixes mode and selection; nonce-safe.
+      requestBody: { $ref: './learning-progress.yaml#/components/requestBodies/Action' }
+      responses: { '201': { $ref: './learning-progress.yaml#/components/responses/State' }, default: { $ref: './learning-catalog.yaml#/components/responses/Error' } }
+  /assignments/{assignmentID}/learning-results:
+    parameters: [{ $ref: '#/components/parameters/ID' }]
+    get:
+      summary: Assignment tutor/student gets selected snapshot, current state, paginated answer history and exercise counts for this assignment. Unfinished exams hide correctness and mistakes, including from other material authors.
+      parameters: [{ $ref: './learning-catalog.yaml#/components/parameters/Limit' }, { $ref: './learning-catalog.yaml#/components/parameters/Offset' }]
+      responses:
+        '200': { description: Assigned results, content: { application/json: { schema: { $ref: '#/components/schemas/Results' } } } }
+        default: { $ref: './learning-catalog.yaml#/components/responses/Error' }
+  /exercise-sets:
+    get:
+      summary: Tutor lists only their own selections.
+      parameters: [{ $ref: './learning-catalog.yaml#/components/parameters/Limit' }, { $ref: './learning-catalog.yaml#/components/parameters/Offset' }]
+      responses:
+        '200': { description: Sets page, content: { application/json: { schema: { allOf: [{ $ref: './learning-catalog.yaml#/components/schemas/Page' }, { type: object, properties: { items: { type: array, items: { $ref: '#/components/schemas/Set' } } } }] } } } }
+        default: { $ref: './learning-catalog.yaml#/components/responses/Error' }
+    post:
+      summary: Save a selection from one published version without answer keys.
+      requestBody: { $ref: '#/components/requestBodies/Set' }
+      responses: { '201': { $ref: '#/components/responses/Set' }, default: { $ref: './learning-catalog.yaml#/components/responses/Error' } }
+  /exercise-sets/{setID}:
+    parameters: [{ name: setID, in: path, required: true, schema: { type: string, format: uuid } }]
+    put:
+      summary: Owner edits a set; issued assignments retain their snapshot.
+      requestBody: { $ref: '#/components/requestBodies/Set' }
+      responses: { '200': { $ref: '#/components/responses/Set' }, default: { $ref: './learning-catalog.yaml#/components/responses/Error' } }
+    delete:
+      summary: Owner deletes a set without deleting issued work.
+      responses: { '204': { description: Removed }, default: { $ref: './learning-catalog.yaml#/components/responses/Error' } }
+components:
+  securitySchemes: { session: { type: apiKey, in: cookie, name: repet_session } }
+  parameters:
+    ID: { name: assignmentID, in: path, required: true, schema: { type: string, format: uuid } }
+  requestBodies:
+    Set: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/SetInput' } } } }
+  responses:
+    Assignment: { description: Assignment with kind/material metadata, content: { application/json: { schema: { $ref: './core-compatibility.yaml#/components/schemas/Assignment' } } } }
+    Set: { description: Own set, content: { application/json: { schema: { $ref: '#/components/schemas/Set' } } } }
+  schemas:
+    Input:
+      type: object
+      additionalProperties: false
+      required: [request_id, student_id, due_at]
+      properties:
+        request_id: { type: string, format: uuid }
+        student_id: { type: string, format: uuid }
+        lesson_id: { type: string, format: uuid }
+        set_id: { type: string, format: uuid }
+        exercise_ids: { type: array, uniqueItems: true, maxItems: 200, items: { type: string, format: uuid } }
+        due_at: { type: string, format: date-time, description: Must be in future }
+        calendar_lesson_id: { type: string, description: Optional UUID or empty; must match tutor/student/org and not be cancelled }
+        mode: { enum: [practice, exam], default: practice }
+    Repeat:
+      type: object
+      additionalProperties: false
+      required: [request_id, due_at]
+      properties:
+        request_id: { type: string, format: uuid }
+        due_at: { type: string, format: date-time }
+        calendar_lesson_id: { type: string }
+    Material:
+      type: object
+      required: [lesson_id, version_id, exercise_ids, calendar_lesson_id, repeat_of, mode, attempt]
+      properties:
+        lesson_id: { type: string, format: uuid }
+        version_id: { type: string, format: uuid }
+        exercise_ids: { type: array, items: { type: string, format: uuid } }
+        calendar_lesson_id: { type: [string, 'null'], format: uuid }
+        repeat_of: { type: [string, 'null'], format: uuid }
+        mode: { enum: [practice, exam] }
+        attempt: { oneOf: [{ $ref: './learning-progress.yaml#/components/schemas/Run' }, { type: 'null' }] }
+    SetInput:
+      type: object
+      additionalProperties: false
+      required: [title, lesson_id]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 180 }
+        lesson_id: { type: string, format: uuid }
+        exercise_ids: { type: array, uniqueItems: true, maxItems: 200, items: { type: string, format: uuid } }
+    Set:
+      type: object
+      required: [id, title, lesson_id, version_id, exercise_ids, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        lesson_id: { type: string, format: uuid }
+        version_id: { type: string, format: uuid }
+        exercise_ids: { type: array, items: { type: string, format: uuid } }
+        created_at: { type: string, format: date-time }
+    Results:
+      type: object
+      required: [assignment, version, state, history, exercise_stats]
+      properties:
+        assignment: { $ref: './core-compatibility.yaml#/components/schemas/Assignment' }
+        version: { $ref: './learning-catalog.yaml#/components/schemas/Version' }
+        state: { oneOf: [{ $ref: './learning-progress.yaml#/components/schemas/State' }, { type: 'null' }] }
+        history: { $ref: './learning-catalog.yaml#/components/schemas/AttemptPage' }
+        exercise_stats:
+          type: array
+          items:
+            type: object
+            required: [exercise_id, attempts, mistakes]
+            properties:
+              exercise_id: { type: string, format: uuid }
+              attempts: { type: integer, minimum: 0 }
+              mistakes: { type: integer, minimum: 0 }

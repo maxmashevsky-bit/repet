@@ -1,0 +1,108 @@
+openapi: 3.1.0
+info: {title: Repet spaced review and short quizzes, version: 1.0.0}
+servers: [{url: /api/v1}]
+security: [{session: []}]
+paths:
+  /learning-reviews/{studentID}:
+    parameters: [{$ref: './learning-rewards.yaml#/components/parameters/StudentID'}]
+    get:
+      summary: Own or active tutor-scoped review plan from completed native runs with live source permission
+      parameters:
+        - {name: mode, in: query, schema: {type: string, enum: [due, errors, all], default: due}}
+        - {$ref: './exercise-bank.yaml#/components/parameters/Limit'}
+        - {$ref: './exercise-bank.yaml#/components/parameters/Offset'}
+        - {name: active_offset, in: query, schema: {type: integer, minimum: 0, maximum: 100000, default: 0}}
+      responses:
+        '200': {description: Review plan; pending and unanswered are separate from incorrect, content: {application/json: {schema: {$ref: '#/components/schemas/Plan'}}}}
+        '400': {description: Unknown, repeated or invalid query parameter}
+        '403': {description: Unsupported role}
+        '404': {description: Foreign student or inactive relationship}
+  /learning-review-sessions:
+    post:
+      summary: Start a student practice quiz using a pinned source version and selected keys; never grants the rest of a private collection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [request_id, source_run_id, mode, count]
+              properties:
+                request_id: {type: string, format: uuid}
+                source_run_id: {type: string, format: uuid}
+                topic_key: {type: string, pattern: '^$|^[0-9a-fA-F]{32}$'}
+                mode: {enum: [quiz, errors, due]}
+                count: {type: integer, minimum: 1, maximum: 10}
+      responses:
+        '201': {description: New or replayed session; identical request_id returns the same run, content: {application/json: {schema: {$ref: '#/components/schemas/Session'}}}}
+        '400': {description: Invalid input or unknown/server-owned field}
+        '403': {description: Student required}
+        '404': {description: Missing or revoked source grant}
+        '409': {description: Nonce payload conflict or existing active run for this lesson}
+        '422': {description: Pending-only source, no eligible exercises or manual review without an active tutor}
+  /learning-review-sessions/{reviewID}:
+    parameters:
+      - {name: reviewID, in: path, required: true, schema: {type: string, format: uuid}}
+    get:
+      summary: Resume own quiz; root source grant is rechecked, with no answer keys
+      responses:
+        '200': {description: Selected version and native saved progress, content: {application/json: {schema: {$ref: '#/components/schemas/Session'}}}}
+        '403': {description: Student required}
+        '404': {description: Foreign run or revoked source}
+  /learning-review-checks:
+    get:
+      summary: Latest long-text answers awaiting review by the source-context tutor with an active relationship
+      parameters: [{$ref: './exercise-bank.yaml#/components/parameters/Limit'}, {$ref: './exercise-bank.yaml#/components/parameters/Offset'}]
+      responses:
+        '200': {description: 'Paginated items with session_id, lesson_id and attempt. Submit verdict through existing catalog lesson attempts/{attemptID}/review API'}
+        '403': {description: Tutor required}
+components:
+  securitySchemes:
+    session: {type: apiKey, in: cookie, name: repet_session}
+  schemas:
+    Session:
+      type: object
+      additionalProperties: false
+      required: [id, state]
+      properties:
+        id: {type: string, format: uuid}
+        state: {$ref: './learning-progress.yaml#/components/schemas/State'}
+    Item:
+      type: object
+      additionalProperties: false
+      required: [source_run_id, lesson_id, exercise_id, topic_key, topic, subtopic, prompt, status, clean_days, due_at]
+      properties:
+        source_run_id: {type: string, format: uuid}
+        lesson_id: {type: string, format: uuid}
+        exercise_id: {type: string, format: uuid}
+        topic_key: {type: string, pattern: '^[0-9a-f]{32}$'}
+        topic: {type: string}
+        subtopic: {type: string}
+        prompt: {type: string}
+        status: {enum: [correct, incorrect, unanswered]}
+        clean_days: {type: integer, minimum: 0}
+        due_at: {type: string, format: date-time}
+    Plan:
+      type: object
+      additionalProperties: false
+      required: [server_time, due_total, mistake_total, unanswered, pending, weekly_completed, weekly_target, items, active]
+      properties:
+        server_time: {type: string, format: date-time}
+        due_total: {type: integer, minimum: 0}
+        mistake_total: {type: integer, minimum: 0}
+        unanswered: {type: integer, minimum: 0}
+        pending: {type: integer, minimum: 0}
+        weekly_completed: {type: integer, minimum: 0}
+        weekly_target: {const: 3}
+        items:
+          type: object
+          required: [items, total, limit, offset]
+          properties:
+            items: {type: array, items: {$ref: '#/components/schemas/Item'}}
+            total: {type: integer, minimum: 0}
+            limit: {type: integer, minimum: 1, maximum: 100}
+            offset: {type: integer, minimum: 0, maximum: 100000}
+        active:
+          type: object
+          description: 'Independent page: items with id/title/attempt (native Run), total, limit=20, offset=active_offset'

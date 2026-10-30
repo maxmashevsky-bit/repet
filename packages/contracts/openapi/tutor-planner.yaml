@@ -1,0 +1,117 @@
+openapi: 3.1.0
+info: {title: Repet tutor planner, version: 1.0.0}
+security: [{session: []}]
+paths:
+  /api/v1/tutor-planner:
+    get:
+      operationId: getTutorPlan
+      summary: Get the authenticated tutor's private weekly plan
+      responses:
+        '200': {description: Plan, content: {application/json: {schema: {$ref: '#/components/schemas/TutorPlan'}}}}
+        '401': {description: No session}
+        '403': {description: Not a tutor}
+    put:
+      operationId: saveTutorPlan
+      summary: Atomically replace a plan using its current revision
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/TutorPlan'}}}
+      responses:
+        '200': {description: Saved plan with incremented revision, content: {application/json: {schema: {$ref: '#/components/schemas/TutorPlan'}}}}
+        '400': {description: Invalid document or unknown fields}
+        '401': {description: No session}
+        '403': {description: Not a tutor}
+        '409': {description: Stale revision; reload before retrying}
+  /api/v1/tutor-planner/calendar:
+    post:
+      operationId: publishTutorPlanCalendar
+      summary: Materialize linked weekly slots as dated lessons, atomically and idempotently
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [revision, from, to, request_id]
+              properties:
+                revision: {type: integer, minimum: 1}
+                from: {type: string, format: date}
+                to: {type: string, format: date, description: Inclusive, at most84 dates and within the next year}
+                request_id: {type: string, format: uuid}
+      responses:
+        '200':
+          description: Created/existing/unlinked/paused occurrence counts, max2000; identical replay returns original counts
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [created, existing, unlinked, paused, from, to]
+                properties:
+                  created: {type: integer, minimum: 0}
+                  existing: {type: integer, minimum: 0}
+                  unlinked: {type: integer, minimum: 0}
+                  paused: {type: integer, minimum: 0}
+                  from: {type: string, format: date}
+                  to: {type: string, format: date}
+        '400': {description: Invalid dates or server-owned fields}
+        '401': {description: No session}
+        '403': {description: Not a tutor}
+        '404': {description: Missing own plan or inactive student relation}
+        '409': {description: Changed nonce payload, stale revision or calendar overlap; no partial export}
+components:
+  securitySchemes:
+    session: {type: apiKey, in: cookie, name: repet_session}
+  schemas:
+    TutorPlan:
+      type: object
+      additionalProperties: false
+      required: [revision, students, lessons, windows, calculator]
+      properties:
+        revision: {type: integer, minimum: 0}
+        students: {type: array, maxItems: 1000, items: {$ref: '#/components/schemas/Student'}}
+        lessons: {type: array, maxItems: 3000, items: {$ref: '#/components/schemas/Lesson'}}
+        windows: {type: array, maxItems: 182, uniqueItems: true, items: {$ref: '#/components/schemas/Window'}}
+        calculator: {$ref: '#/components/schemas/Calculator'}
+    Student:
+      type: object
+      additionalProperties: false
+      required: [id, name, subject, price_kopecks, duration, contact]
+      properties:
+        id: {type: string, format: uuid, description: 'Local document key, not a user account ID'}
+        relation_id: {type: string, description: 'Optional active relation belonging to this tutor; empty string unlinks the account'}
+        name: {type: string, minLength: 1, maxLength: 120}
+        subject: {type: string, maxLength: 180}
+        price_kopecks: {type: integer, minimum: 0, maximum: 1000000000}
+        duration: {type: integer, minimum: 1, maximum: 780}
+        contact: {type: string, maxLength: 1000, description: Empty or Telegram handle or HTTP(S) URL without userinfo}
+    Lesson:
+      type: object
+      additionalProperties: false
+      required: [id, student_id, weekday, start_minute, duration, paused]
+      properties:
+        id: {type: string, format: uuid}
+        student_id: {type: string, format: uuid, description: Student key in this document}
+        weekday: {type: integer, minimum: 1, maximum: 7}
+        start_minute: {type: integer, minimum: 540, maximum: 1319}
+        duration: {type: integer, minimum: 1, maximum: 780, description: End must not exceed minute 1320}
+        paused: {type: boolean}
+    Window:
+      type: object
+      additionalProperties: false
+      required: [weekday, start_minute]
+      properties:
+        weekday: {type: integer, minimum: 1, maximum: 7}
+        start_minute: {type: integer, minimum: 540, maximum: 1290, multipleOf: 30}
+    Calculator:
+      type: object
+      additionalProperties: false
+      required: [goal_kopecks, price_kopecks, lessons_per_student, duration, weeks, people, preparation_hours]
+      properties:
+        goal_kopecks: {type: integer, minimum: 0, maximum: 100000000000}
+        price_kopecks: {type: integer, minimum: 1, maximum: 1000000000}
+        lessons_per_student: {type: integer, minimum: 1, maximum: 21}
+        duration: {type: integer, minimum: 1, maximum: 780}
+        weeks: {type: number, minimum: 1, maximum: 6}
+        people: {type: integer, minimum: 1, maximum: 100}
+        preparation_hours: {type: number, minimum: 0, maximum: 168}

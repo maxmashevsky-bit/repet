@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const publicRoutes = ["/login", "/register", "/forgot-password", "/reset-password", "/terms", "/privacy"];
+const publicRoutes = ["/login", "/register", "/forgot-password", "/reset-password", "/verify-email", "/terms", "/privacy"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -17,5 +17,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/messages/:path*", "/calendar/:path*", "/tasks/:path*", "/settings/:path*"]
+  matcher: ["/", "/messages/:path*", "/calendar/:path*", "/tasks/:path*", "/settings/:path*", "/teaching/:path*"]
 };

@@ -84,10 +84,10 @@ func (s *Store) LoginUser(ctx context.Context, email, password, userAgent, ipAdd
 	var user domain.User
 	var passwordHash string
 	err := s.db.QueryRow(ctx, `
-		select id::text, organization_id::text, email, display_name, role, timezone, locale, created_at, coalesce(password_hash, '')
+		select id::text, organization_id::text, email, display_name, role, timezone, locale, created_at, coalesce(password_hash, ''), email_verified_at is not null
 		from users
 		where organization_id=$1 and email=$2
-	`, DefaultOrganizationID, email).Scan(&user.ID, &user.OrganizationID, &user.Email, &user.DisplayName, &user.Role, &user.Timezone, &user.Locale, &user.CreatedAt, &passwordHash)
+	`, DefaultOrganizationID, email).Scan(&user.ID, &user.OrganizationID, &user.Email, &user.DisplayName, &user.Role, &user.Timezone, &user.Locale, &user.CreatedAt, &passwordHash, &user.EmailVerified)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.User{}, "", apperr.ErrUnauthorized
@@ -187,13 +187,13 @@ func (s *Store) UserBySessionToken(ctx context.Context, token string) (domain.Us
 		return domain.User{}, apperr.ErrUnauthorized
 	}
 	row := s.db.QueryRow(ctx, `
-		select u.id::text, u.organization_id::text, u.email, u.display_name, u.role, u.timezone, u.locale, u.created_at
+		select u.id::text, u.organization_id::text, u.email, u.display_name, u.role, u.timezone, u.locale, u.created_at, u.email_verified_at is not null
 		from sessions s
 		join users u on u.id=s.user_id
 		where s.token_hash=$1 and s.revoked_at is null and s.expires_at > now()
 	`, platform.TokenHash(token))
 	var user domain.User
-	if err := row.Scan(&user.ID, &user.OrganizationID, &user.Email, &user.DisplayName, &user.Role, &user.Timezone, &user.Locale, &user.CreatedAt); err != nil {
+	if err := row.Scan(&user.ID, &user.OrganizationID, &user.Email, &user.DisplayName, &user.Role, &user.Timezone, &user.Locale, &user.CreatedAt, &user.EmailVerified); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.User{}, apperr.ErrUnauthorized
 		}
@@ -237,12 +237,14 @@ func (s *Store) UpdateProfile(ctx context.Context, actor domain.User, displayNam
 func (s *Store) ListConversations(ctx context.Context, actor domain.User) ([]domain.Conversation, error) {
 	rows, err := s.db.Query(ctx, `
 		select c.id::text, c.tutor_id::text, tutor.display_name, c.student_id::text, student.display_name,
-		  coalesce((select body from messages m where m.conversation_id=c.id order by m.created_at desc, m.id desc limit 1), ''),
-		  c.created_at
+		  coalesce((select case when body<>'' then body when file_id is not null then 'Файл' when assignment_id is not null then 'Задание' else 'Учебный урок' end from messages m where m.conversation_id=c.id order by m.sequence desc limit 1), ''),
+		  c.created_at,
+		  (select count(*) from messages m where m.conversation_id=c.id and m.author_id<>$3 and m.sequence>coalesce((select last_sequence from message_read_cursors where conversation_id=c.id and user_id=$3),0))
 		from conversations c
 		join users tutor on tutor.id=c.tutor_id
 		join users student on student.id=c.student_id
-		where c.organization_id=$1 and ($2='admin' or c.tutor_id=$3 or c.student_id=$3)
+		where c.organization_id=$1 and $2 in ('tutor','student','admin') and (c.tutor_id=$3 or c.student_id=$3)
+		and exists(select 1 from relations r where r.organization_id=c.organization_id and r.tutor_id=c.tutor_id and r.student_id=c.student_id and r.status='active')
 		order by c.created_at desc
 		limit 100
 	`, actor.OrganizationID, string(actor.Role), actor.ID)
@@ -250,10 +252,10 @@ func (s *Store) ListConversations(ctx context.Context, actor domain.User) ([]dom
 		return nil, err
 	}
 	defer rows.Close()
-	var out []domain.Conversation
+	out := make([]domain.Conversation, 0)
 	for rows.Next() {
 		var item domain.Conversation
-		if err := rows.Scan(&item.ID, &item.TutorID, &item.TutorName, &item.StudentID, &item.StudentName, &item.LastMessage, &item.CreatedAt); err != nil {
+		if err := rows.Scan(&item.ID, &item.TutorID, &item.TutorName, &item.StudentID, &item.StudentName, &item.LastMessage, &item.CreatedAt, &item.UnreadCount); err != nil {
 			return nil, err
 		}
 		out = append(out, item)
@@ -269,27 +271,40 @@ func (s *Store) ListMessages(ctx context.Context, actor domain.User, conversatio
 		return nil, err
 	}
 	rows, err := s.db.Query(ctx, `
-		select id::text, conversation_id::text, author_id::text, body, created_at
-		from messages
-		where organization_id=$1 and conversation_id=$2
-		order by created_at desc, id desc
+		select m.id::text, m.conversation_id::text, m.author_id::text, m.body, m.created_at, m.sequence,
+		coalesce(m.file_id::text,''),coalesce(m.assignment_id::text,''),coalesce(m.learning_lesson_id::text,'')
+		from messages m join conversations c on c.id=m.conversation_id
+		where m.organization_id=$1 and m.conversation_id=$2 and (c.tutor_id=$4 or c.student_id=$4)
+		and exists(select 1 from relations r where r.organization_id=c.organization_id and r.tutor_id=c.tutor_id and r.student_id=c.student_id and r.status='active')
+		order by m.sequence desc
 		limit 80
 		offset $3
-	`, actor.OrganizationID, conversationID, offset)
+	`, actor.OrganizationID, conversationID, offset, actor.ID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var out []domain.Message
+	out := make([]domain.Message, 0)
+	type references struct{ file, assignment, lesson string }
+	refs := make([]references, 0)
 	for rows.Next() {
 		var msg domain.Message
-		if err := rows.Scan(&msg.ID, &msg.ConversationID, &msg.AuthorID, &msg.Body, &msg.CreatedAt); err != nil {
+		var ref references
+		if err := rows.Scan(&msg.ID, &msg.ConversationID, &msg.AuthorID, &msg.Body, &msg.CreatedAt, &msg.Sequence, &ref.file, &ref.assignment, &ref.lesson); err != nil {
 			return nil, err
 		}
 		out = append(out, msg)
+		refs = append(refs, ref)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
+	}
+	rows.Close()
+	for i, ref := range refs {
+		out[i].Attachment, err = s.chatAttachment(ctx, s.db, conversationID, ref.file, ref.assignment, ref.lesson)
+		if err != nil {
+			return nil, err
+		}
 	}
 	for i, j := 0, len(out)-1; i < j; i, j = i+1, j-1 {
 		out[i], out[j] = out[j], out[i]
@@ -298,9 +313,22 @@ func (s *Store) ListMessages(ctx context.Context, actor domain.User, conversatio
 }
 
 func (s *Store) SendMessage(ctx context.Context, actor domain.User, conversationID, body, idempotencyKey string) (domain.Message, error) {
-	body = strings.TrimSpace(body)
+	return s.SendChatMessage(ctx, actor, conversationID, domain.MessageInput{Body: body}, idempotencyKey)
+}
+
+func (s *Store) SendChatMessage(ctx context.Context, actor domain.User, conversationID string, in domain.MessageInput, idempotencyKey string) (domain.Message, error) {
+	body := strings.TrimSpace(in.Body)
 	idempotencyKey = strings.TrimSpace(idempotencyKey)
-	if !platform.ValidUUID(conversationID) || body == "" || len(body) > 4000 || idempotencyKey == "" || len(idempotencyKey) > 120 {
+	attachments := 0
+	for _, id := range []string{in.FileID, in.AssignmentID, in.LessonID} {
+		if id != "" {
+			attachments++
+			if !platform.ValidUUID(id) {
+				return domain.Message{}, apperr.ErrBadRequest
+			}
+		}
+	}
+	if !platform.ValidUUID(conversationID) || (body == "" && attachments == 0) || attachments > 1 || len([]rune(body)) > 4000 || idempotencyKey == "" || len(idempotencyKey) > 120 {
 		return domain.Message{}, apperr.ErrBadRequest
 	}
 	if err := s.authorizeConversation(ctx, actor, conversationID); err != nil {
@@ -315,18 +343,55 @@ func (s *Store) SendMessage(ctx context.Context, actor domain.User, conversation
 		return domain.Message{}, err
 	}
 	defer tx.Rollback(ctx)
-	var msg domain.Message
-	err = tx.QueryRow(ctx, `
-		insert into messages (id, organization_id, conversation_id, author_id, body, idempotency_key)
-		values ($1, $2, $3, $4, $5, $6)
-		on conflict (conversation_id, author_id, idempotency_key) do update set body=messages.body
-		returning id::text, conversation_id::text, author_id::text, body, created_at
-	`, id, actor.OrganizationID, conversationID, actor.ID, body, idempotencyKey).Scan(&msg.ID, &msg.ConversationID, &msg.AuthorID, &msg.Body, &msg.CreatedAt)
-	if err != nil {
+	if _, err = tx.Exec(ctx, `select pg_advisory_xact_lock(hashtextextended($1,1522))`, conversationID+actor.ID+idempotencyKey); err != nil {
 		return domain.Message{}, err
 	}
 	var recipientID string
-	if err := tx.QueryRow(ctx, `select case when tutor_id=$2 then student_id::text else tutor_id::text end from conversations where id=$1 and organization_id=$3`, conversationID, actor.ID, actor.OrganizationID).Scan(&recipientID); err != nil {
+	// Keep the resource grant stable until commit; revocation waits for this send.
+	err = tx.QueryRow(ctx, `select case when c.tutor_id=$2 then c.student_id::text else c.tutor_id::text end from conversations c join relations r on r.organization_id=c.organization_id and r.tutor_id=c.tutor_id and r.student_id=c.student_id and r.status='active' where c.id=$1 and c.organization_id=$3 and $2 in(c.tutor_id,c.student_id) for share of r`, conversationID, actor.ID, actor.OrganizationID).Scan(&recipientID)
+	if err != nil {
+		return domain.Message{}, catalogError(err)
+	}
+	var msg domain.Message
+	var fileID, assignmentID, lessonID string
+	err = tx.QueryRow(ctx, `select id::text,conversation_id::text,author_id::text,body,created_at,sequence,coalesce(file_id::text,''),coalesce(assignment_id::text,''),coalesce(learning_lesson_id::text,'') from messages where conversation_id=$1 and author_id=$2 and idempotency_key=$3`, conversationID, actor.ID, idempotencyKey).Scan(&msg.ID, &msg.ConversationID, &msg.AuthorID, &msg.Body, &msg.CreatedAt, &msg.Sequence, &fileID, &assignmentID, &lessonID)
+	if err == nil {
+		if msg.Body != body || fileID != in.FileID || assignmentID != in.AssignmentID || lessonID != in.LessonID {
+			return domain.Message{}, apperr.ErrConflict
+		}
+		msg.Attachment, err = s.chatAttachment(ctx, tx, conversationID, fileID, assignmentID, lessonID)
+		if err != nil {
+			return domain.Message{}, err
+		}
+		return msg, tx.Commit(ctx)
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return domain.Message{}, err
+	}
+	if in.FileID != "" {
+		var found bool
+		err = tx.QueryRow(ctx, `select true from chat_files where id=$1 and conversation_id=$2 and owner_id=$3 and organization_id=$4 and attached_at is null and expires_at>clock_timestamp() for update`, in.FileID, conversationID, actor.ID, actor.OrganizationID).Scan(&found)
+		if err != nil {
+			return domain.Message{}, catalogError(err)
+		}
+	}
+	var available bool
+	if err = tx.QueryRow(ctx, `select chat_reference_available($1,$2,$3)`, conversationID, nullableUUID(in.AssignmentID), nullableUUID(in.LessonID)).Scan(&available); err != nil {
+		return domain.Message{}, err
+	}
+	if !available {
+		return domain.Message{}, apperr.ErrNotFound
+	}
+	err = tx.QueryRow(ctx, `
+		insert into messages (id, organization_id, conversation_id, author_id, body, idempotency_key,file_id,assignment_id,learning_lesson_id)
+		values ($1, $2, $3, $4, $5, $6,$7,$8,$9)
+		returning id::text, conversation_id::text, author_id::text, body, created_at, sequence
+	`, id, actor.OrganizationID, conversationID, actor.ID, body, idempotencyKey, nullableUUID(in.FileID), nullableUUID(in.AssignmentID), nullableUUID(in.LessonID)).Scan(&msg.ID, &msg.ConversationID, &msg.AuthorID, &msg.Body, &msg.CreatedAt, &msg.Sequence)
+	if err != nil {
+		return domain.Message{}, err
+	}
+	msg.Attachment, err = s.chatAttachment(ctx, tx, conversationID, in.FileID, in.AssignmentID, in.LessonID)
+	if err != nil {
 		return domain.Message{}, err
 	}
 	if err := insertNotification(ctx, tx, actor.OrganizationID, recipientID, "Новое сообщение", actor.DisplayName, "/messages?conversation="+conversationID, "message:"+msg.ID); err != nil {
@@ -349,11 +414,14 @@ func (s *Store) ListAssignmentsPage(ctx context.Context, actor domain.User, offs
 	}
 	rows, err := s.db.Query(ctx, `
 		select a.id::text, a.tutor_id::text, a.student_id::text, student.display_name, a.title, a.subject, a.topic, a.body,
-		  a.status, a.due_at, a.max_score, sub.score, coalesce(sub.feedback, ''), coalesce(sub.answer, ''), a.created_at
+		  a.status, a.due_at, a.max_score, sub.score, coalesce(sub.feedback, ''), coalesce(sub.answer, ''), a.created_at,a.kind,`+assignmentMaterialJSON+`,`+assignmentHTMLJSON+`
 		from assignments a
 		join users student on student.id=a.student_id
 		left join assignment_submissions sub on sub.assignment_id=a.id and sub.student_id=a.student_id
+		left join material_assignments ma on ma.assignment_id=a.id
 		where a.organization_id=$1 and ($2='admin' or a.tutor_id=$3 or a.student_id=$3)
+		and (a.kind='text' or ($2 in ('tutor','student') and exists(select 1 from relations rel where rel.tutor_id=a.tutor_id and rel.student_id=a.student_id and rel.organization_id=a.organization_id and rel.status='active')))
+		and (not exists(select 1 from html_assignment_links h where h.assignment_id=a.id) or ($2 in ('tutor','student') and exists(select 1 from relations rel where rel.organization_id=a.organization_id and rel.tutor_id=a.tutor_id and rel.student_id=a.student_id and rel.status='active')))
 		order by a.due_at asc, a.id asc
 		limit 100
 		offset $4
@@ -362,10 +430,10 @@ func (s *Store) ListAssignmentsPage(ctx context.Context, actor domain.User, offs
 		return nil, err
 	}
 	defer rows.Close()
-	var out []domain.Assignment
+	out := make([]domain.Assignment, 0)
 	for rows.Next() {
 		var item domain.Assignment
-		if err := rows.Scan(&item.ID, &item.TutorID, &item.StudentID, &item.StudentName, &item.Title, &item.Subject, &item.Topic, &item.Body, &item.Status, &item.DueAt, &item.MaxScore, &item.Score, &item.Feedback, &item.Answer, &item.CreatedAt); err != nil {
+		if err := rows.Scan(&item.ID, &item.TutorID, &item.StudentID, &item.StudentName, &item.Title, &item.Subject, &item.Topic, &item.Body, &item.Status, &item.DueAt, &item.MaxScore, &item.Score, &item.Feedback, &item.Answer, &item.CreatedAt, &item.Kind, &item.Material, &item.HTML); err != nil {
 			return nil, err
 		}
 		out = append(out, item)
@@ -425,7 +493,8 @@ func (s *Store) SubmitAssignment(ctx context.Context, actor domain.User, assignm
 	}
 	defer tx.Rollback(ctx)
 	var tutorID, title, status string
-	err = tx.QueryRow(ctx, `select tutor_id::text, title, status from assignments where id=$1 and organization_id=$2 and student_id=$3 for update`, assignmentID, actor.OrganizationID, actor.ID).Scan(&tutorID, &title, &status)
+	err = tx.QueryRow(ctx, `select tutor_id::text, title, status from assignments a where id=$1 and organization_id=$2 and student_id=$3 and kind='text'
+ and (not exists(select 1 from html_assignment_links h where h.assignment_id=a.id) or exists(select 1 from relations rel where rel.organization_id=a.organization_id and rel.tutor_id=a.tutor_id and rel.student_id=a.student_id and rel.status='active')) for update`, assignmentID, actor.OrganizationID, actor.ID).Scan(&tutorID, &title, &status)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.Assignment{}, apperr.ErrNotFound
 	}
@@ -477,7 +546,8 @@ func (s *Store) GradeAssignment(ctx context.Context, actor domain.User, assignme
 	defer tx.Rollback(ctx)
 	var studentID, title, currentStatus string
 	var maxScore int
-	err = tx.QueryRow(ctx, `select student_id::text, title, status, max_score from assignments where id=$1 and organization_id=$2 and ($3='admin' or tutor_id=$4) for update`, assignmentID, actor.OrganizationID, string(actor.Role), actor.ID).Scan(&studentID, &title, &currentStatus, &maxScore)
+	err = tx.QueryRow(ctx, `select student_id::text, title, status, max_score from assignments a where id=$1 and organization_id=$2 and ($3='admin' or tutor_id=$4) and kind='text'
+ and (not exists(select 1 from html_assignment_links h where h.assignment_id=a.id) or ($3='tutor' and exists(select 1 from relations rel where rel.organization_id=a.organization_id and rel.tutor_id=a.tutor_id and rel.student_id=a.student_id and rel.status='active'))) for update`, assignmentID, actor.OrganizationID, string(actor.Role), actor.ID).Scan(&studentID, &title, &currentStatus, &maxScore)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.Assignment{}, apperr.ErrNotFound
 	}
@@ -540,7 +610,7 @@ func (s *Store) ListNotificationsPage(ctx context.Context, actor domain.User, of
 		return nil, err
 	}
 	defer rows.Close()
-	var out []domain.Notification
+	out := make([]domain.Notification, 0)
 	for rows.Next() {
 		var item domain.Notification
 		if err := rows.Scan(&item.ID, &item.Title, &item.Body, &item.Href, &item.ReadAt, &item.CreatedAt); err != nil {
@@ -609,8 +679,9 @@ func (s *Store) authorizeConversation(ctx context.Context, actor domain.User, co
 	var ok bool
 	err := s.db.QueryRow(ctx, `
 		select exists(
-		  select 1 from conversations
-		  where id=$1 and organization_id=$2 and ($3='admin' or tutor_id=$4 or student_id=$4)
+		  select 1 from conversations c
+		  where c.id=$1 and c.organization_id=$2 and $3 in('tutor','student','admin') and (c.tutor_id=$4 or c.student_id=$4)
+		  and exists(select 1 from relations r where r.organization_id=c.organization_id and r.tutor_id=c.tutor_id and r.student_id=c.student_id and r.status='active')
 		)
 	`, conversationID, actor.OrganizationID, string(actor.Role), actor.ID).Scan(&ok)
 	if err != nil {
@@ -628,14 +699,17 @@ func (s *Store) getAssignmentForActor(ctx context.Context, actor domain.User, as
 	}
 	row := s.db.QueryRow(ctx, `
 		select a.id::text, a.tutor_id::text, a.student_id::text, student.display_name, a.title, a.subject, a.topic, a.body,
-		  a.status, a.due_at, a.max_score, sub.score, coalesce(sub.feedback, ''), coalesce(sub.answer, ''), a.created_at
+		  a.status, a.due_at, a.max_score, sub.score, coalesce(sub.feedback, ''), coalesce(sub.answer, ''), a.created_at,a.kind,`+assignmentMaterialJSON+`,`+assignmentHTMLJSON+`
 		from assignments a
 		join users student on student.id=a.student_id
 		left join assignment_submissions sub on sub.assignment_id=a.id and sub.student_id=a.student_id
+		left join material_assignments ma on ma.assignment_id=a.id
 		where a.id=$1 and a.organization_id=$2 and ($3='admin' or a.tutor_id=$4 or a.student_id=$4)
+		and (a.kind='text' or ($3 in ('tutor','student') and exists(select 1 from relations rel where rel.tutor_id=a.tutor_id and rel.student_id=a.student_id and rel.organization_id=a.organization_id and rel.status='active')))
+		and (not exists(select 1 from html_assignment_links h where h.assignment_id=a.id) or ($3 in ('tutor','student') and exists(select 1 from relations rel where rel.organization_id=a.organization_id and rel.tutor_id=a.tutor_id and rel.student_id=a.student_id and rel.status='active')))
 	`, assignmentID, actor.OrganizationID, string(actor.Role), actor.ID)
 	var item domain.Assignment
-	if err := row.Scan(&item.ID, &item.TutorID, &item.StudentID, &item.StudentName, &item.Title, &item.Subject, &item.Topic, &item.Body, &item.Status, &item.DueAt, &item.MaxScore, &item.Score, &item.Feedback, &item.Answer, &item.CreatedAt); err != nil {
+	if err := row.Scan(&item.ID, &item.TutorID, &item.StudentID, &item.StudentName, &item.Title, &item.Subject, &item.Topic, &item.Body, &item.Status, &item.DueAt, &item.MaxScore, &item.Score, &item.Feedback, &item.Answer, &item.CreatedAt, &item.Kind, &item.Material, &item.HTML); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.Assignment{}, apperr.ErrNotFound
 		}

@@ -28,9 +28,9 @@ export function NotificationsPopover({ unread }: { unread: number }) {
 
   return (
     <div className="notifications">
-      <button className="bell-button" type="button" aria-label="Открыть уведомления" onClick={() => setOpen((value) => !value)}>
+      <button className="bell-button" type="button" aria-label="Открыть уведомления" aria-expanded={open} title={`Непрочитанных: ${unread}`} onClick={() => setOpen((value) => !value)}>
         <Icon name="bell" size={25} />
-        {unread > 0 ? <strong>{unread}</strong> : null}
+        {unread > 0 ? <strong>{unread > 99 ? "99+" : unread}</strong> : null}
       </button>
       {open ? (
         <section className="popover" aria-label="Уведомления">

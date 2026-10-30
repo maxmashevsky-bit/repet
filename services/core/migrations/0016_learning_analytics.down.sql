@@ -1,0 +1,3 @@
+drop index analytics_assignments_period_idx;
+drop index analytics_hints_period_idx;
+drop index analytics_answers_period_idx;

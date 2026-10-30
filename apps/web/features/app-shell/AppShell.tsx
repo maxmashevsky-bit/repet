@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
-import { authApi, productApi } from "../../shared/api/client";
+import { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { authApi, productApi, ApiError } from "../../shared/api/client";
 import type { Dashboard } from "../../shared/api/types";
+import { usePolling } from "../messages/usePolling";
 import { NotificationsPopover } from "../notifications/NotificationsPopover";
 import { Brand } from "../ui/Brand";
 import { Icon } from "../ui/Icon";
@@ -12,6 +13,7 @@ import { Icon } from "../ui/Icon";
 type WorkspaceContext = {
   dashboard: Dashboard;
   refresh: () => Promise<void>;
+  refreshConversations: (signal?:AbortSignal)=>Promise<void>;
 };
 
 const Context = createContext<WorkspaceContext | null>(null);
@@ -35,19 +37,33 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const notificationEpoch=useRef(0),conversationEpoch=useRef(0),dashboardEpoch=useRef(0);
 
   async function refresh() {
+    const generation=++dashboardEpoch.current,notifications=++notificationEpoch.current,conversations=++conversationEpoch.current;
     setError("");
     try {
-      setDashboard(await productApi.dashboard());
+      const next=await productApi.dashboard();
+      if(generation===dashboardEpoch.current)setDashboard(previous=>({...next,notifications:notifications===notificationEpoch.current||!previous?next.notifications:previous.notifications,conversations:conversations===conversationEpoch.current||!previous?next.conversations:previous.conversations}));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось загрузить данные");
     }
   }
 
   useEffect(() => {
-    productApi.dashboard().then(setDashboard).catch((err: unknown) => setError(err instanceof Error ? err.message : "Не удалось загрузить данные"));
-  }, []);
+    productApi.dashboard().then(setDashboard).catch((err: unknown) => { if(err instanceof ApiError&&err.code==="email_unverified"){router.replace("/verify-email");return;}setError(err instanceof Error ? err.message : "Не удалось загрузить данные"); });
+  }, [router]);
+
+  usePolling(async(signal)=>{
+    const generation=notificationEpoch.current;
+    const notifications=await productApi.notifications(signal);
+    if(!signal.aborted&&generation===notificationEpoch.current)setDashboard(old=>old?{...old,notifications}:old);
+  },Boolean(dashboard),20000);
+
+  async function refreshConversations(signal?:AbortSignal){
+    const generation=++conversationEpoch.current,conversations=await productApi.conversations(signal);
+    if(!signal?.aborted&&generation===conversationEpoch.current)setDashboard(old=>old?{...old,conversations}:old);
+  }
 
   async function logout() {
     await authApi.logout();
@@ -71,21 +87,21 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <Context.Provider value={{ dashboard, refresh }}>
+    <Context.Provider value={{ dashboard, refresh, refreshConversations }}>
       <div className="app-frame">
         <a className="skip-link" href="#content">Перейти к содержимому</a>
         <header className="app-header">
           <Brand />
           <nav className="top-nav" aria-label="Главное меню">
             {nav.map((item) => (
-              <Link key={item.href} href={item.href} className={pathname === item.href ? "active" : ""}>
+              <Link key={item.href} href={item.href} className={pathname === item.href || item.href !== "/" && pathname.startsWith(item.href + "/") ? "active" : ""}>
                 {item.label}
               </Link>
             ))}
           </nav>
           <div className="header-actions">
             <NotificationsPopover unread={unread} />
-            <Link href="/settings" className="profile-link">
+            <Link href="/settings" className="profile-link" title={dashboard.user.display_name} aria-label={`Профиль: ${dashboard.user.display_name}`}>
               <span className="avatar" aria-hidden="true">{dashboard.user.display_name.slice(0, 1)}</span>
               <span className="profile-copy">
                 <strong>{dashboard.user.display_name}</strong>
@@ -124,14 +140,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           {children}
         </main>
         <footer className="app-footer">
-          <p>«Репет» развивается независимо. Если сервис помогает вам учиться, вы можете поддержать автора проекта.</p>
+          <p>Репет</p>
           {process.env.NEXT_PUBLIC_SUPPORT_CREATOR_URL ? (
             <a className="support-link" href={process.env.NEXT_PUBLIC_SUPPORT_CREATOR_URL}>Поддержать создателя ♥</a>
-          ) : (
-            <span className="support-link disabled">Поддержать создателя ♥</span>
-          )}
+          ) : null}
           <nav aria-label="Ссылки в подвале">
             <Link href="/privacy">Конфиденциальность</Link>
+            <Link href="/terms">Условия использования</Link>
             <span>© {new Date().getFullYear()} Репет</span>
           </nav>
         </footer>

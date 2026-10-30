@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -38,7 +39,19 @@ func NewServer(cfg config.Config, log *slog.Logger, st *store.Store, provider au
 	r.Use(middleware.Timeout(30 * time.Second))
 	r.Use(middleware.AllowContentType("application/json"))
 	r.Use(middleware.SetHeader("Cache-Control", "no-store"))
-	r.Use(middleware.RequestSize(int64(cfg.RequestBodyLimitByte)))
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			limit := cfg.RequestBodyLimitByte
+			if r.Method == http.MethodPost && r.URL.Path == "/api/v1/pdf-imports" {
+				limit = 7 << 20
+			}
+			if r.Method == http.MethodPost && strings.HasPrefix(r.URL.Path, "/api/v1/messages/conversations/") && strings.HasSuffix(r.URL.Path, "/files") {
+				limit = 6 << 20
+			}
+			r.Body = http.MaxBytesReader(w, r.Body, limit)
+			next.ServeHTTP(w, r)
+		})
+	})
 
 	r.Get("/healthz", s.health)
 	r.Get("/readyz", s.ready)
@@ -50,11 +63,27 @@ func NewServer(cfg config.Config, log *slog.Logger, st *store.Store, provider au
 
 	r.Group(func(api chi.Router) {
 		api.Use(s.authenticate)
+		s.catalogRoutes(api)
+		s.bankRoutes(api)
+		s.studyRoutes(api)
+		s.analyticsRoutes(api)
+		s.rewardRoutes(api)
+		s.reviewRoutes(api)
+		s.familyRoutes(api)
+		s.htmlLessonRoutes(api)
+		s.pdfRoutes(api)
+		api.Get("/api/v1/tutor-planner", s.tutorPlan)
+		api.Put("/api/v1/tutor-planner", s.tutorPlan)
+		api.Post("/api/v1/tutor-planner/calendar", s.publishPlanCalendar)
 		api.Get("/api/v1/me", s.me)
 		api.Post("/api/v1/auth/logout", s.logout)
+		api.Post("/api/v1/auth/verification-email", s.verificationEmail)
+		api.Post("/api/v1/auth/verify-email", s.verifyEmail)
 		api.Get("/api/v1/dashboard", s.dashboard)
 		api.Get("/api/v1/profile", s.me)
 		api.Post("/api/v1/profile", s.updateProfile)
+		api.Get("/api/v1/teaching-preferences", s.teachingPreferences)
+		api.Put("/api/v1/teaching-preferences", s.teachingPreferences)
 		api.Post("/api/v1/invitations", s.createInvitation)
 		api.Post("/api/v1/invitations/{token}/accept", s.acceptInvitation)
 		api.Get("/api/v1/relations", s.listRelations)
@@ -64,8 +93,15 @@ func NewServer(cfg config.Config, log *slog.Logger, st *store.Store, provider au
 		api.Get("/api/v1/messages/conversations", s.listConversations)
 		api.Get("/api/v1/messages/conversations/{conversationID}", s.listMessages)
 		api.Post("/api/v1/messages/conversations/{conversationID}", s.sendMessage)
+		api.Post("/api/v1/messages/conversations/{conversationID}/read", s.markMessagesRead)
+		api.Post("/api/v1/messages/conversations/{conversationID}/files", s.uploadChatFile)
+		api.Get("/api/v1/messages/conversations/{conversationID}/files/{fileID}", s.downloadChatFile)
+		api.Delete("/api/v1/messages/conversations/{conversationID}/files/{fileID}", s.deleteChatFile)
+		api.Get("/api/v1/messages/conversations/{conversationID}/references", s.listChatReferences)
+		api.Get("/api/v1/messages/conversations/{conversationID}/assignments/{assignmentID}", s.chatAssignment)
 		api.Get("/api/v1/assignments", s.listAssignments)
 		api.Post("/api/v1/assignments", s.createAssignment)
+		s.materialAssignmentRoutes(api)
 		api.Post("/api/v1/assignments/{assignmentID}/submit", s.submitAssignment)
 		api.Post("/api/v1/assignments/{assignmentID}/grade", s.gradeAssignment)
 		api.Get("/api/v1/notifications", s.listNotifications)
@@ -110,7 +146,12 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.setSessionCookie(w, token)
-	WriteJSON(w, http.StatusCreated, map[string]domain.User{"user": user})
+	user.EmailVerificationRequired = s.cfg.RequireEmailVerification
+	sent := false
+	if s.cfg.RequireEmailVerification {
+		sent = s.deliverVerification(r, user) == nil
+	}
+	WriteJSON(w, http.StatusCreated, map[string]any{"user": user, "verification_email_sent": sent})
 }
 
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
@@ -132,6 +173,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.setSessionCookie(w, token)
+	user.EmailVerificationRequired = s.cfg.RequireEmailVerification
 	WriteJSON(w, http.StatusOK, map[string]domain.User{"user": user})
 }
 
@@ -416,9 +458,7 @@ func (s *Server) sendMessage(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, err)
 		return
 	}
-	var req struct {
-		Body string `json:"body"`
-	}
+	var req domain.MessageInput
 	if err := decodeJSON(r, &req); err != nil {
 		WriteError(w, err)
 		return
@@ -431,7 +471,7 @@ func (s *Server) sendMessage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	msg, err := s.store.SendMessage(r.Context(), user, chi.URLParam(r, "conversationID"), req.Body, key)
+	msg, err := s.store.SendChatMessage(r.Context(), user, chi.URLParam(r, "conversationID"), req, key)
 	if err != nil {
 		WriteError(w, err)
 		return
@@ -583,6 +623,9 @@ func (s *Server) authenticate(next http.Handler) http.Handler {
 		if cookie, err := r.Cookie(store.SessionCookieName); err == nil {
 			user, err := s.store.UserBySessionToken(r.Context(), cookie.Value)
 			if err == nil {
+				if !s.verificationAllowed(w, r, user) {
+					return
+				}
 				p := auth.Principal{UserID: user.ID, Email: user.Email, DisplayName: user.DisplayName, Role: user.Role}
 				next.ServeHTTP(w, r.WithContext(auth.WithPrincipal(r.Context(), p)))
 				return
@@ -594,6 +637,16 @@ func (s *Server) authenticate(next http.Handler) http.Handler {
 			WriteError(w, ErrUnauthorized)
 			return
 		}
+		if s.cfg.RequireEmailVerification {
+			user, err := s.store.GetUser(r.Context(), p.UserID)
+			if err != nil {
+				WriteError(w, ErrUnauthorized)
+				return
+			}
+			if !s.verificationAllowed(w, r, user) {
+				return
+			}
+		}
 		next.ServeHTTP(w, r.WithContext(auth.WithPrincipal(r.Context(), p)))
 	})
 }
@@ -603,7 +656,9 @@ func (s *Server) currentUser(r *http.Request) (domain.User, error) {
 	if !ok {
 		return domain.User{}, ErrUnauthorized
 	}
-	return s.store.EnsureUser(r.Context(), principal)
+	user, err := s.store.EnsureUser(r.Context(), principal)
+	user.EmailVerificationRequired = s.cfg.RequireEmailVerification
+	return user, err
 }
 
 func (s *Server) setSessionCookie(w http.ResponseWriter, token string) {

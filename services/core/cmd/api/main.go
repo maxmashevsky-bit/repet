@@ -16,6 +16,8 @@ import (
 	"tutor-platform/services/core/internal/auth"
 	"tutor-platform/services/core/internal/config"
 	"tutor-platform/services/core/internal/httpapi"
+	"tutor-platform/services/core/internal/objectstorage"
+	"tutor-platform/services/core/internal/pdfextract"
 	"tutor-platform/services/core/internal/store"
 )
 
@@ -51,6 +53,23 @@ func main() {
 	}
 
 	st := store.New(db)
+	if cfg.PDFExtractorURL != "" {
+		objects, err := objectstorage.NewFilesystem(cfg.ObjectStoragePath)
+		if err != nil {
+			log.Error("private storage initialization failed", "error", err)
+			os.Exit(1)
+		}
+		defer objects.Close()
+		extractor, err := pdfextract.NewClient(cfg.PDFExtractorURL)
+		if err != nil {
+			log.Error("PDF extractor configuration failed", "error", err)
+			os.Exit(1)
+		}
+		st = store.NewWithPDF(db, objects, extractor)
+		done := make(chan struct{})
+		go func() { defer close(done); st.RunPDFQueue(ctx, log) }()
+		defer func() { stop(); <-done }()
+	}
 	provider := auth.DevProvider{Enabled: cfg.DevAuthEnabled}
 	handler := httpapi.NewServer(cfg, log, st, provider)
 	server := &http.Server{
@@ -60,6 +79,15 @@ func main() {
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      15 * time.Second,
 		IdleTimeout:       60 * time.Second,
+	}
+	preview := &http.Server{Addr: cfg.HTMLPreviewAddr, Handler: httpapi.NewHTMLPreviewServer(cfg, st), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second}
+	if cfg.HTMLPreviewAddr != "" {
+		go func() {
+			if err := preview.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				log.Error("HTML preview server failed", "error", err)
+				stop()
+			}
+		}()
 	}
 
 	go func() {
@@ -76,6 +104,11 @@ func main() {
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Error("graceful shutdown failed", "error", err)
 		os.Exit(1)
+	}
+	if cfg.HTMLPreviewAddr != "" {
+		if err := preview.Shutdown(shutdownCtx); err != nil {
+			log.Error("HTML preview shutdown failed", "error", err)
+		}
 	}
 	log.Info("http server stopped")
 }

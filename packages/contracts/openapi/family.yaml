@@ -1,0 +1,131 @@
+openapi: 3.1.0
+info: {title: Repet limited guardian grants, version: 1.0.0}
+servers: [{url: /api/v1}]
+security: [{session: []}]
+paths:
+  /family/links:
+    get:
+      summary: Own outgoing invitations or active accepted guardian grants; never tokens/hashes
+      parameters: [{$ref: './exercise-bank.yaml#/components/parameters/Limit'}, {$ref: './exercise-bank.yaml#/components/parameters/Offset'}]
+      responses: {'200': {description: 'items (GuardianLink), total, limit, offset'}}
+  /family/invitations:
+    post:
+      summary: Student explicitly grants academic sharing and gets a secret fragment link; no client student/guardian/role IDs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [guardian_email, confirm_share]
+              properties: {guardian_email: {type: string, format: email}, confirm_share: {const: true}}
+      responses: {'201': {description: 'link (GuardianLink), accept_url=/family-invite#token=secret; token returned only here'}, '400': {description: Invalid email or missing consent}, '403': {description: Student required}, '409': {description: Live duplicate invitation or daily limit}}
+  /family/invitations/preview:
+    post:
+      summary: Authenticated email-bound preview without activating access; token is in body, not URL
+      requestBody: {$ref: '#/components/requestBodies/Token'}
+      responses: {'200': {description: Invitation, content: {application/json: {schema: {$ref: '#/components/schemas/GuardianLink'}}}}, '404': {description: Wrong account, organization or token}, '422': {description: Expired or revoked}}
+  /family/invitations/accept:
+    post:
+      summary: Email-bound explicit confirmation; replay only for the same guardian, revoked grants never reactivate
+      requestBody: {$ref: '#/components/requestBodies/Token'}
+      responses: {'200': {description: Active grant, content: {application/json: {schema: {$ref: '#/components/schemas/GuardianLink'}}}}, '404': {description: Wrong account, organization or token}, '422': {description: Expired or revoked}}
+  /family/links/{linkID}/revoke:
+    parameters: [{name: linkID, in: path, required: true, schema: {type: string, format: uuid}}]
+    post:
+      summary: Idempotent revocation by child or accepted guardian
+      requestBody: {$ref: './study.yaml#/components/requestBodies/Empty'}
+      responses: {'200': {description: Revoked}, '404': {description: Not a participant}}
+  /family/children/{studentID}:
+    parameters: [{$ref: './learning-rewards.yaml#/components/parameters/StudentID'}]
+    get:
+      summary: Explicit academic-only projection for an active guardian; no impersonation, private messages/answers/feedback/keys or active exam scores
+      parameters:
+        - {name: from, in: query, schema: {type: string, format: date}}
+        - {name: to, in: query, schema: {type: string, format: date}}
+        - {name: topic_offset, in: query, schema: {$ref: '#/components/schemas/Offset'}}
+        - {name: exam_offset, in: query, schema: {$ref: '#/components/schemas/Offset'}}
+        - {name: lesson_offset, in: query, schema: {$ref: '#/components/schemas/Offset'}}
+        - {name: assignment_offset, in: query, schema: {$ref: '#/components/schemas/Offset'}}
+        - {name: note_offset, in: query, schema: {$ref: '#/components/schemas/Offset'}}
+        - {name: event_offset, in: query, schema: {$ref: '#/components/schemas/Offset'}}
+        - {name: result_offset, in: query, schema: {$ref: '#/components/schemas/Offset'}}
+      responses:
+        '200': {description: Family report, content: {application/json: {schema: {$ref: '#/components/schemas/Report'}}}}
+        '400': {description: Invalid/repeated/unknown query or period longer than366days}
+        '404': {description: No active guardian grant in current organization}
+  /family/children/{studentID}/read:
+    parameters: [{$ref: './learning-rewards.yaml#/components/parameters/StudentID'}]
+    post:
+      summary: Server-owned read watermark for this active guardian grant
+      requestBody: {$ref: './study.yaml#/components/requestBodies/Empty'}
+      responses: {'200': {description: Read}, '404': {description: No active grant}}
+  /family/notes:
+    post:
+      summary: Active tutor publishes a comment explicitly for guardians; normal feedback is never copied
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [student_id, body, request_id]
+              properties: {student_id: {type: string, format: uuid}, body: {type: string, minLength: 1, maxLength: 4000}, request_id: {type: string, format: uuid}}
+      responses: {'201': {description: New or replayed note}, '403': {description: Tutor required}, '404': {description: No active teaching relationship}, '409': {description: Nonce payload conflict}}
+  /family/students/{studentID}/notes:
+    parameters: [{$ref: './learning-rewards.yaml#/components/parameters/StudentID'}]
+    get:
+      summary: Active tutor's own non-withdrawn guardian comments for this child
+      parameters: [{$ref: './exercise-bank.yaml#/components/parameters/Limit'}, {$ref: './exercise-bank.yaml#/components/parameters/Offset'}]
+      responses: {'200': {description: 'items with id/tutor_name/body/created_at, total, limit, offset'}, '403': {description: Tutor required}, '404': {description: No active teaching relationship}}
+  /family/notes/{noteID}/withdraw:
+    parameters: [{name: noteID, in: path, required: true, schema: {type: string, format: uuid}}]
+    post:
+      summary: Author withdraws a previously shared note without changing private feedback
+      requestBody: {$ref: './study.yaml#/components/requestBodies/Empty'}
+      responses: {'200': {description: Withdrawn, replay safe}, '403': {description: Tutor required}, '404': {description: Foreign note}}
+components:
+  securitySchemes:
+    session: {type: apiKey, in: cookie, name: repet_session}
+  requestBodies:
+    Token:
+      required: true
+      content: {application/json: {schema: {type: object, additionalProperties: false, required: [token], properties: {token: {type: string, minLength: 32, maxLength: 128}}}}}
+  schemas:
+    Offset: {type: integer, minimum: 0, maximum: 100000, default: 0}
+    GuardianLink:
+      type: object
+      additionalProperties: false
+      required: [id, student_id, student_name, guardian_email, guardian_id, status, created_at, expires_at, accepted_at, revoked_at]
+      properties:
+        id: {type: string, format: uuid}
+        student_id: {type: string, format: uuid}
+        student_name: {type: string}
+        guardian_email: {type: string, format: email}
+        guardian_id: {type: [string, 'null'], format: uuid}
+        status: {enum: [pending, active, revoked]}
+        created_at: {type: string, format: date-time}
+        expires_at: {type: string, format: date-time}
+        accepted_at: {type: [string, 'null'], format: date-time}
+        revoked_at: {type: [string, 'null'], format: date-time}
+    Report:
+      type: object
+      additionalProperties: false
+      required: [student, from, to, generated_at, summary, topics, timeline, exams, lessons, assignments, notes, events, results, unread]
+      properties:
+        student: {type: object, description: Only id/display_name}
+        from: {type: string, format: date}
+        to: {type: string, format: date}
+        generated_at: {type: string, format: date-time}
+        summary: {type: object, description: Native metrics with attempts/graded/correct/incorrect/pending/mistakes/hints/hinted/accuracy/hint_rate}
+        topics: {type: object, description: Independent20-item topic metrics page with sample size and level}
+        timeline: {type: array, items: {type: object}, description: UTC day/attempts/graded/correct/accuracy, at most366days}
+        exams: {type: object, description: Completed mock exams only, raw points/max_points/pending and dates}
+        lessons: {type: object, description: 'Page: id/title/tutor_name/starts_at/ends_at/status'}
+        assignments: {type: object, description: 'Page: id/title/tutor_name/subject/topic/status/due_at/score/max_score; no body/answer/feedback'}
+        notes: {type: object, description: 'Page: id/tutor_name/body/created_at; explicitly shared and not withdrawn'}
+        events: {type: object, description: 'Page: id/kind/created_at/unread; dedicated academic events after acceptance, no child notifications'}
+        results: {type: object, description: 'Page: id/lesson_title/prompt/status/attempts/created_at; no submitted answers or keys'}
+        unread: {type: integer, minimum: 0}

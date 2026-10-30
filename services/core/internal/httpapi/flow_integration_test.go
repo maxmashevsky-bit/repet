@@ -99,6 +99,28 @@ func TestHTTPAuthorizationPostgres(t *testing.T) {
 		if err := json.Unmarshal(payload, &envelope); err != nil {
 			t.Fatal(err)
 		}
+		req, err := http.NewRequest(http.MethodGet, server.URL+"/api/v1/dashboard", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.AddCookie(cookie)
+		res, err := client.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+		if res.StatusCode != http.StatusOK {
+			t.Fatalf("new %s dashboard status %d", role, res.StatusCode)
+		}
+		var dashboard map[string]json.RawMessage
+		if err := json.NewDecoder(res.Body).Decode(&dashboard); err != nil {
+			t.Fatal(err)
+		}
+		for _, field := range []string{"relations", "lessons", "assignments", "conversations", "notifications"} {
+			if string(dashboard[field]) != "[]" {
+				t.Errorf("new %s dashboard %s = %s, want []", role, field, dashboard[field])
+			}
+		}
 		return envelope.User, cookie
 	}
 	tutor, tutorCookie := register("tutor", domain.RoleTutor)
