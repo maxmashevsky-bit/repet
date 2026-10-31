@@ -1,5 +1,11 @@
 # Browser-проверка библиотеки
 
+## Подтверждение Почты
+
+С2026-10-30 проверка почты включена по умолчанию, в том числе в текущем preview3020. `email-verification.e2e.mjs` запускается с `REPET_MAIL_E2E_URL=http://127.0.0.1:3020` и `REPET_MAILPIT_URL=http://127.0.0.1:18125`, а также обычными переменными Playwright/Chrome ниже. Проверяет обе роли: регистрацию, реальное письмо в локальном Mailpit,403до подтверждения, подтверждение и login; отдельно — SMTP failure UI, cooldown, invalid token и прямой переход в кабинет. Mailpit не доказывает внешнюю доставку. Тест создаёт только свои synthetic аккаунты.
+
+Исторические browser fixtures ниже, которые регистрируют аккаунт и сразу вызывают учебные API, требуют **отдельного изолированного development/E2E сервера** с явно заданным `REQUIRE_EMAIL_VERIFICATION=false`. Не отключать проверку на production или в пользовательском preview ради старых fixtures. Go integration tests используют собственные httptest-конфигурации, а email gate проверяется отдельными Postgres/SMTP tests.
+
 ## Успеваемость (12)
 
 `analytics.test.mjs` проверяет runtime-отчёт, знаменатели/pending, закрытость active exam, ссылки и UTC-периоды. `analytics.e2e.mjs` использует отдельную synthetic API/БД до0016 и Node/Playwright runner; URL по умолчанию3017.20объективных ответов и1manual pending → tutor UI75%/темы/рекомендация → назначение только5ошибок → student UI/дневная таблица/пустой период. Ширины320/375/768/1440, длинное имя, foreign tutor404, private keys не раскрыты. Артефакты `tmp/analytics12`; не запускать на пользовательской базе. Серверный `TestLearningAnalyticsPostgres` также проверяет двух преподавателей одного ребёнка, отзыв связи, nonce replay/conflict и неправильные параметры. Дополненные study integration assertions защищают скрытые активные результаты и баллы завершённого bank exam.

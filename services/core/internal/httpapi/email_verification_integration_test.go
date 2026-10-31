@@ -171,6 +171,10 @@ func TestEmailVerificationPostgres(t *testing.T) {
 		call("POST", "/api/v1/auth/verify-email", map[string]any{"token": token}, cookie, 200)
 		call("POST", "/api/v1/auth/verify-email", map[string]any{"token": token}, cookie, 200)
 		call("GET", "/api/v1/dashboard", nil, cookie, 200)
+		verifiedPayload, _ := call("POST", "/api/v1/auth/verification-email", map[string]any{}, cookie, 200)
+		if !bytes.Contains(verifiedPayload, []byte(`"status":"verified"`)) {
+			t.Fatal("already verified account reported email sent")
+		}
 		payload, _ = call("POST", "/api/v1/auth/login", map[string]any{"email": role + unique + "@example.test", "password": "Password123!"}, nil, 200)
 		if !bytes.Contains(payload, []byte(`"email_verified":true`)) {
 			t.Fatal("verification did not persist")

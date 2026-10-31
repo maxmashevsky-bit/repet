@@ -33,6 +33,16 @@
 
 ## Доказательства текущего аудита
 
+### Подтверждение Почты Включено — 2026-10-30
+
+По прямому запросу владельца включено по умолчанию в Config.Load, development Compose и .env.example; production запрет отключения сохранён. Флаг принимает только true/false, пустое/опечатка останавливают запуск, а не обходят проверку. APP_PUBLIC_URL по умолчанию127.0.0.1 соответствует README/сессии, configurable через Compose. Register sent=false теперь явно сообщает об ошибке доставки; resend для уже подтверждённого аккаунта возвращает status=verified без ложного уведомления об отправке. Контракт дополнен enum sent/verified. Existing single-use bound token/hash/expiry/cooldown и backend403 не ослаблены.
+
+`make test` с fresh synthetic repet_email_enabled_checks PASS HTTP162,425с/store21,802с, остальные cached; config default/explicit opt-out/invalid flag tests PASS1,100с. Focused race mail/verification на fresh repet_email_enabled_race PASS21,394с. `make lint` nativeGo/current web image+tests PASS0errors/5прежнихimgwarnings. API root target build PASS, web Next296,8с/TS19,0с PASS; host/image digest **7eace4a8ed80c02bead3ded24409ca3cf1b6ed17a335fe699696d495d1777969** совпал.
+
+Реальный browser на текущем3020:2PASS11,218с — обе роли register→Mailpit message→403до подтверждения→confirm→dashboard200→logout/login, плюс ошибка SMTP UI (mock503; реальный TCP failure отдельно в Go), cooldown409, invalid token, direct workspace redirect,320/375 no overflow/0JSerrors. Первый negative test упал только на locator: Next route-announcer также role=alert; уточнён scope auth-card, весь набор повторён PASS. Screenshots tmp/release проверены. External SMTP/домен/пароль владелец не предоставил, доставки в настоящий почтовый ящик НЕ подтверждено. Mailpit не доставляет письма в интернет.
+
+Preview3020 web/API обновлены, require-email=true через новый default, API включает миграции до0025 (sharing UI/race025 по-прежнему не готовы,16неDONE). Для локальной почты повторно использован существующий container repet-release-checks-mailpit-1, только он из прежнего disposable stack запущен; UI127.0.0.1:18125, SMTP alias repet-preview-mailpit в assignment-task07. Другие release-checks containers остановлены, user PostgreSQL volumes не менялись. Старые browser fixtures для учебных API должны использовать отдельный E2E development сервер с явным false, не отключать guard в preview/production ради тестов. Этот запрос не разрешал новый push/deploy.
+
 ### Прямой Запрос: Сервер, Почта И Интерфейс — 2026-10-30
 
 Это приоритетный запрос владельца поверх очереди, не объявление завершения16–19. Общий Dockerfile api/web/pdf, standalone Next, закрытый PostgreSQL, изолированный HTML host, Caddy HTTPS, file secrets, лимиты/health/log rotation. `scripts/package-server.sh` собирает переносимый source archive без secrets/БД/private files/runtime; команды и ограничения в SERVER_LAUNCH.md. Backup/restore скрипты проверены на отдельном локальном Compose project `repet-release-checks`: реальная строка БД и удалённый после backup приватный файл восстановились, SHA256 файла совпал `412bd74052c859ece6f5c4a66e533f30bcef287e4a5f264cdba256c3469cf661`. Копия только synthetic в ignored backups/20261030T085513Z, не пользовательская БД.

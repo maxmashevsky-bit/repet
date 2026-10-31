@@ -1,6 +1,39 @@
 package config
 
-import "testing"
+import (
+	"os"
+	"testing"
+)
+
+func TestEmailVerificationDefaultAndExplicitDevelopmentOptOut(t *testing.T) {
+	t.Setenv("APP_ENV", "development")
+	t.Setenv("APP_PUBLIC_URL", "http://127.0.0.1:3000")
+	t.Setenv("CORS_ALLOWED_ORIGINS", "http://127.0.0.1:3000")
+	t.Setenv("SMTP_ADDR", "127.0.0.1:1025")
+	t.Setenv("SMTP_FROM", "no-reply@example.test")
+	t.Setenv("DATABASE_URL_FILE", "")
+	t.Setenv("SMTP_PASSWORD_FILE", "")
+	t.Setenv("HTML_PREVIEW_PUBLIC_URL", "http://html.localhost:8081")
+	t.Setenv("REQUIRE_EMAIL_VERIFICATION", "true")
+	if err := os.Unsetenv("REQUIRE_EMAIL_VERIFICATION"); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := Load()
+	if err != nil || !cfg.RequireEmailVerification {
+		t.Fatalf("verification must default on: required=%t error=%v", cfg.RequireEmailVerification, err)
+	}
+	t.Setenv("REQUIRE_EMAIL_VERIFICATION", "false")
+	cfg, err = Load()
+	if err != nil || cfg.RequireEmailVerification {
+		t.Fatal("explicit development opt-out failed", err)
+	}
+	for _, value := range []string{"", "flase", "TRUE", "0"} {
+		t.Setenv("REQUIRE_EMAIL_VERIFICATION", value)
+		if _, err := Load(); err == nil {
+			t.Fatal("invalid verification setting accepted", value)
+		}
+	}
+}
 
 func TestProductionEmailConfig(t *testing.T) {
 	cfg := Config{AppEnv: "production", DatabaseURL: "postgres://example", CookieSecure: true, CORSAllowedOrigins: []string{"https://example.test"}, AppPublicURL: "https://example.test", HTMLPreviewPublicURL: "https://lessons.example.net", RequireEmailVerification: true, SMTPAddr: "smtp.example.test:587", SMTPFrom: "no-reply@example.test"}

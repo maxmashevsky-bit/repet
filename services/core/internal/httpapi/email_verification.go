@@ -48,6 +48,10 @@ func (s *Server) verificationEmail(w http.ResponseWriter, r *http.Request) {
 		WriteError(w, ErrBadRequest)
 		return
 	}
+	if user.EmailVerified {
+		WriteJSON(w, http.StatusOK, map[string]string{"status": "verified"})
+		return
+	}
 	if err = s.deliverVerification(r, user); err != nil {
 		WriteError(w, err)
 		return

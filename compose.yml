@@ -36,8 +36,8 @@ services:
       COOKIE_SECURE: "false"
       SMTP_ADDR: mailpit:1025
       SMTP_FROM: no-reply@repet.local
-      APP_PUBLIC_URL: http://localhost:${WEB_PORT:-3000}
-      REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-false}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://127.0.0.1:${WEB_PORT:-3000}}
+      REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-true}
       PDF_EXTRACTOR_URL: http://pdf-extractor:8092
       OBJECT_STORAGE_PATH: /private/objects
     volumes:

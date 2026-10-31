@@ -190,7 +190,16 @@ paths:
           application/json:
             schema: {type: object, additionalProperties: false}
       responses:
-        '200': {description: SMTP accepted the message, or email is already verified}
+        '200':
+          description: sent means SMTP accepted the message; verified means no message was sent because the account is already confirmed.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [status]
+                properties:
+                  status: {type: string, enum: [sent, verified]}
         '400': {$ref: '#/components/responses/BadRequest'}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '409': {$ref: '#/components/responses/Conflict'}

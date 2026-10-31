@@ -32,6 +32,10 @@ type Config struct {
 }
 
 func Load() (Config, error) {
+	verification := getEnv("REQUIRE_EMAIL_VERIFICATION", "true")
+	if verification != "true" && verification != "false" {
+		return Config{}, errors.New("REQUIRE_EMAIL_VERIFICATION must be true or false")
+	}
 	cfg := Config{
 		ObjectStoragePath:        getEnv("OBJECT_STORAGE_PATH", ".data/objects"),
 		PDFExtractorURL:          getEnv("PDF_EXTRACTOR_URL", ""),
@@ -40,7 +44,7 @@ func Load() (Config, error) {
 		HTMLPreviewAddr:          getEnv("HTML_PREVIEW_ADDR", ":8081"),
 		HTMLPreviewPublicURL:     getEnv("HTML_PREVIEW_PUBLIC_URL", "http://html.localhost:8081"),
 		DatabaseURL:              getEnv("DATABASE_URL", "postgres://tutor:tutor@localhost:5432/tutor_platform?sslmode=disable"),
-		CORSAllowedOrigins:       splitCSV(getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000")),
+		CORSAllowedOrigins:       splitCSV(getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")),
 		DevAuthEnabled:           getEnv("DEV_AUTH_ENABLED", "false") == "true",
 		CookieSecure:             getEnv("COOKIE_SECURE", "false") == "true",
 		RequestBodyLimitByte:     parseInt64(getEnv("REQUEST_BODY_LIMIT_BYTES", "1048576"), 1048576),
@@ -48,8 +52,8 @@ func Load() (Config, error) {
 		SMTPFrom:                 getEnv("SMTP_FROM", "no-reply@repet.local"),
 		SMTPUser:                 getEnv("SMTP_USER", ""),
 		SMTPPassword:             getEnv("SMTP_PASSWORD", ""),
-		AppPublicURL:             getEnv("APP_PUBLIC_URL", "http://localhost:3000"),
-		RequireEmailVerification: getEnv("REQUIRE_EMAIL_VERIFICATION", getEnv("APP_ENV", "development")) == "production" || getEnv("REQUIRE_EMAIL_VERIFICATION", "false") == "true",
+		AppPublicURL:             getEnv("APP_PUBLIC_URL", "http://127.0.0.1:3000"),
+		RequireEmailVerification: verification == "true",
 	}
 	for key, target := range map[string]*string{"DATABASE_URL": &cfg.DatabaseURL, "SMTP_PASSWORD": &cfg.SMTPPassword} {
 		if path := getEnv(key+"_FILE", ""); path != "" {
